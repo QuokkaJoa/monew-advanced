@@ -2,6 +2,7 @@ package com.part2.monew.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
@@ -12,6 +13,7 @@ import java.util.UUID;
 
 @Entity
 @Getter
+@Setter
 @Table(name="users")
 public class User {
     @Id
@@ -19,8 +21,7 @@ public class User {
     @Column(name = "user_id")
     private UUID id;
 
-    @Column(name = "nickname")
-    private String username;
+    private String nickname;
 
     @Column(nullable = false, unique = true, length = 50)
     private String email;
