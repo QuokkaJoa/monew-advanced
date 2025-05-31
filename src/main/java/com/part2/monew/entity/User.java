@@ -29,7 +29,8 @@ public class User {
     @Column(nullable = false, length = 30)
     private String password;
 
-    private boolean active;
+    @Column(nullable = false)
+    private boolean active = true;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false,updatable = false)
