@@ -31,10 +31,33 @@ public class UserService {
             .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!user.getId().equals(requestUserId)){
-            throw new RuntimeException("You are not alloawd to modify this user");
+            throw new RuntimeException("No permission to modify this user");
         }
         userMapper.updateNickname(request, user);
         userRepository.save(user);
         return userMapper.toResponse(user);
+    }
+
+    public void delete(UUID userId, UUID requestUserId) {
+        User user = userRepository.findByIdAndActiveTrue(userId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!user.getId().equals(requestUserId)){
+            throw new RuntimeException("No permission to delete this user");
+        }
+
+        user.setActive(false);
+        userRepository.save(user);
+    }
+
+    public void deleteHard(UUID userId, UUID requestUserId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!user.getId().equals(requestUserId)){
+            throw new RuntimeException("No permission to delete this user");
+        }
+
+        userRepository.delete(user);
     }
 }
