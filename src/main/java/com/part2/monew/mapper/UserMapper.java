@@ -1,10 +1,12 @@
 package com.part2.monew.mapper;
 
 import com.part2.monew.dto.request.UserCreateRequest;
+import com.part2.monew.dto.request.UserUpdateRequest;
 import com.part2.monew.dto.response.UserResponse;
 import com.part2.monew.entity.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.mapstruct.ReportingPolicy;
 
 import java.time.Instant;
@@ -18,6 +20,9 @@ public interface UserMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     User toEntity(UserCreateRequest request);
+
+    @Mapping(target = "nickname", source = "nickname")
+    void updateNickname(UserUpdateRequest request, @MappingTarget User user);
 
     @Mapping(target = "createdAt", expression = "java(user.getCreatedAt())")
     UserResponse toResponse(User user);
