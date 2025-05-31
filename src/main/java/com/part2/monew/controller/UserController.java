@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,10 +22,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/api/users")
 public class UserController {
+
     private final UserService userService;
 
     @PostMapping("/validate")
-    public ResponseEntity<Void> validateUserInfo(@RequestBody @Valid UserInfoRequest request){
+    public ResponseEntity<Void> validateUserInfo(@RequestBody @Valid UserInfoRequest request) {
         return ResponseEntity.ok().build();
     }
 
@@ -43,5 +45,21 @@ public class UserController {
         return ResponseEntity.ok(updatedUser);
     }
 
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Void> delete(
+        @PathVariable UUID userId,
+        @RequestHeader("MoNew-Request-User-ID") UUID requestUserId
+    ) {
+        userService.delete(userId, requestUserId);
+        return ResponseEntity.noContent().build();
+    }
 
+    @DeleteMapping("/{userId}/hard")
+    public ResponseEntity<Void> deleteHard(
+        @PathVariable UUID userId,
+        @RequestHeader("MoNew-Request-User-ID") UUID requestUserId
+    ) {
+        userService.deleteHard(userId, requestUserId);
+        return ResponseEntity.noContent().build();
+    }
 }
