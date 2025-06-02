@@ -5,7 +5,8 @@ import com.part2.monew.dto.request.UserUpdateRequest;
 import com.part2.monew.dto.response.UserResponse;
 import com.part2.monew.entity.User;
 import com.part2.monew.exception.user.EmailDuplicateException;
-import com.part2.monew.exception.user.NoPermissionException;
+import com.part2.monew.exception.user.NoPermissionToDeleteException;
+import com.part2.monew.exception.user.NoPermissionToUpdateException;
 import com.part2.monew.exception.user.UserNotFoundException;
 import com.part2.monew.mapper.UserMapper;
 import com.part2.monew.repository.UserRepository;
@@ -34,7 +35,7 @@ public class UserService {
             .orElseThrow(UserNotFoundException::new);
 
         if (!user.getId().equals(requestUserId)){
-            throw new NoPermissionException();
+            throw new NoPermissionToUpdateException();
         }
         user.setNickname(request.getNickname());
         userRepository.save(user);
@@ -46,7 +47,7 @@ public class UserService {
             .orElseThrow(UserNotFoundException::new);
 
         if (!user.getId().equals(requestUserId)){
-            throw new NoPermissionException();
+            throw new NoPermissionToDeleteException();
         }
 
         user.setActive(false);
@@ -58,7 +59,7 @@ public class UserService {
             .orElseThrow(UserNotFoundException::new);
 
         if (!user.getId().equals(requestUserId)){
-            throw new NoPermissionException();
+            throw new NoPermissionToDeleteException();
         }
 
         userRepository.delete(user);
