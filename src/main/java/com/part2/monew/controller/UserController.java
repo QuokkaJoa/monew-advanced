@@ -6,7 +6,7 @@ import com.part2.monew.dto.request.UserUpdateRequest;
 import com.part2.monew.dto.response.UserResponse;
 import com.part2.monew.entity.User;
 import com.part2.monew.mapper.UserMapper;
-import com.part2.monew.service.UserService;
+import com.part2.monew.service.impl.UserServiceImpl;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -26,12 +26,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/users")
 public class UserController {
 
-    private final UserService userService;
+    private final UserServiceImpl userServiceImpl;
     private final UserMapper userMapper;
 
     @PostMapping("")
     public ResponseEntity<UserResponse> create(@RequestBody @Valid UserCreateRequest request) {
-        return ResponseEntity.ok(userService.createUser(request));
+        return ResponseEntity.ok(userServiceImpl.createUser(request));
     }
 
     @PostMapping("/login")
@@ -39,7 +39,7 @@ public class UserController {
             @RequestBody @Valid UserLoginRequest request,
             HttpServletResponse response
     ) {
-        User user = userService.loginUser(request);
+        User user = userServiceImpl.loginUser(request);
         response.setHeader("MoNew-Request-User-ID", user.getId().toString());
         return ResponseEntity.ok(userMapper.toResponse(user));
     }
@@ -50,7 +50,7 @@ public class UserController {
         @RequestHeader("MoNew-Request-User-ID") UUID requestUserId,
         @RequestBody @Valid UserUpdateRequest request
     ) {
-        UserResponse updatedUser = userService.updateNickname(userId, requestUserId, request);
+        UserResponse updatedUser = userServiceImpl.updateNickname(userId, requestUserId, request);
         return ResponseEntity.ok(updatedUser);
     }
 
@@ -59,7 +59,7 @@ public class UserController {
         @PathVariable UUID userId,
         @RequestHeader("MoNew-Request-User-ID") UUID requestUserId
     ) {
-        userService.delete(userId, requestUserId);
+        userServiceImpl.delete(userId, requestUserId);
         return ResponseEntity.noContent().build();
     }
 
@@ -68,7 +68,7 @@ public class UserController {
         @PathVariable UUID userId,
         @RequestHeader("MoNew-Request-User-ID") UUID requestUserId
     ) {
-        userService.deleteHard(userId, requestUserId);
+        userServiceImpl.deleteHard(userId, requestUserId);
         return ResponseEntity.noContent().build();
     }
 }
