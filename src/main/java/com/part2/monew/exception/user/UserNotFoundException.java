@@ -1,4 +1,4 @@
-package com.part2.monew.exception;
+package com.part2.monew.exception.user;
 
 public class UserNotFoundException extends RuntimeException {
 
