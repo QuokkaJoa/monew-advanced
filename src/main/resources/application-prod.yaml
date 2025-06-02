@@ -19,8 +19,8 @@ spring:
     show-sql: false
     properties:
       hibernate:
+        default_batch_fetch_size: 500
         dialect: org.hibernate.dialect.PostgreSQLDialect
-    open-in-view: false
 
   sql:
     init:

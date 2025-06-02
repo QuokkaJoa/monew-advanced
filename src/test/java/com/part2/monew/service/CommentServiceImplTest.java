@@ -1,0 +1,81 @@
+package com.part2.monew.service;
+
+import com.part2.monew.dto.request.CommentRequest;
+import com.part2.monew.dto.response.CursorResponse;
+import com.part2.monew.entity.CommentsManagement;
+import com.part2.monew.entity.NewsArticle;
+import com.part2.monew.entity.User;
+import com.part2.monew.repository.CommentRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+
+@SpringBootTest
+@Transactional(readOnly = true)
+class CommentServiceImplTest {
+
+    @PersistenceContext
+    private EntityManager em;
+
+    @Autowired
+    private CommentService commentService;
+
+    @Test
+    @Transactional
+    @DisplayName("기사 ID로 댓글 목록을 조회하고 CursorResponse로 반환한다.")
+    void findCommentsByArticleId() {
+        // given
+        User user = new User("test@example.com", "pass123", "tester", true, Timestamp.from(Instant.now()));
+        em.persist(user);
+
+        NewsArticle article = new NewsArticle("http://url.com", "제목", Timestamp.from(Instant.now()), "요약", 0L);
+        em.persist(article);
+
+        Instant baseTime = Instant.parse("2025-06-01T00:00:00Z");
+
+        CommentsManagement cm1 = CommentsManagement.create(user, article, "내용1", 0, Timestamp.from(baseTime.plus(1, ChronoUnit.HOURS)));
+        CommentsManagement cm2 = CommentsManagement.create(user, article, "내용2", 0, Timestamp.from(baseTime.plus(2, ChronoUnit.HOURS)));
+        CommentsManagement cm3 = CommentsManagement.create(user, article, "내용3", 0, Timestamp.from(baseTime.plus(3, ChronoUnit.HOURS)));
+        CommentsManagement cm4 = CommentsManagement.create(user, article, "내용4", 0, Timestamp.from(baseTime.plus(4, ChronoUnit.HOURS)));
+        CommentsManagement cm5 = CommentsManagement.create(user, article, "내용5", 0, Timestamp.from(baseTime.plus(5, ChronoUnit.HOURS)));
+        CommentsManagement cm6 = CommentsManagement.create(user, article, "내용6", 0, Timestamp.from(baseTime.plus(6, ChronoUnit.HOURS)));
+
+        em.persist(cm1);
+        em.persist(cm2);
+        em.persist(cm3);
+        em.persist(cm4);
+        em.persist(cm5);
+        em.persist(cm6);
+
+        em.flush();
+        em.clear();
+
+        CommentRequest request = CommentRequest.builder()
+                .articleId(article.getId())
+                .limit(5)
+                .orderBy("createdAt")
+                .direction("DESC")
+                .build();
+
+        // when
+        CursorResponse response = commentService.findCommentsByArticleId(request);
+
+        // then
+        assertThat(response.getContent()).hasSize(5);
+        assertThat(response.getHasNext()).isTrue();
+        assertThat(response.getTotalElements()).isEqualTo(6);
+    }
+}
