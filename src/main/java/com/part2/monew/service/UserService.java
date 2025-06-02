@@ -33,7 +33,7 @@ public class UserService {
         if (!user.getId().equals(requestUserId)){
             throw new RuntimeException("No permission to modify this user");
         }
-        userMapper.updateNickname(request, user);
+        user.setNickname(request.getNickname());
         userRepository.save(user);
         return userMapper.toResponse(user);
     }
