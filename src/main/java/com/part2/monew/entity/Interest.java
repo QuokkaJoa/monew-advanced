@@ -2,6 +2,7 @@ package com.part2.monew.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -14,6 +15,7 @@ import java.util.UUID;
 
 @Entity
 @Getter
+@Setter
 @Table(name = "interests")
 public class Interest {
 
@@ -37,12 +39,12 @@ public class Interest {
     @Column(name = "updated_at")
     private Timestamp updatedAt;
 
-    @OneToMany(mappedBy = "interest", cascade = CascadeType.ALL)
-    private List<InterestKeyword> interestKeyword = new ArrayList<>();
+    @OneToMany(mappedBy = "interest", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<InterestKeyword> interestKeywords = new ArrayList<>();
 
-    @OneToMany(mappedBy = "interest", cascade = CascadeType.ALL)
-    private List<InterestNewsArticle> interestNewsArticle = new ArrayList<>();
+    @OneToMany(mappedBy = "interest", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<InterestNewsArticle> interestNewsArticles = new ArrayList<>();
 
-    @OneToMany(mappedBy = "interest", cascade = CascadeType.ALL)
-    private List<UserSubscriber> userSubscriber = new ArrayList<>();
+    @OneToMany(mappedBy = "interest", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserSubscriber> userSubscribers = new ArrayList<>();
 }
