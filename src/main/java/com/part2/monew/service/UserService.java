@@ -7,9 +7,10 @@ import com.part2.monew.dto.response.UserResponse;
 import com.part2.monew.entity.User;
 import com.part2.monew.mapper.UserMapper;
 import com.part2.monew.repository.UserRepository;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -47,7 +48,8 @@ public class UserService {
         if (!user.getId().equals(requestUserId)){
             throw new RuntimeException("No permission to modify this user");
         }
-        user.setNickname(request.getNickname());
+
+        user.setUsername(request.getNickname());
         userRepository.save(user);
         return userMapper.toResponse(user);
     }

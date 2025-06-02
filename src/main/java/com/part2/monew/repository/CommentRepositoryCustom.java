@@ -11,4 +11,3 @@ public interface CommentRepositoryCustom {
 
     Long totalCount(UUID articleId);
 }
-ㄴ

@@ -1,6 +1,8 @@
 package com.part2.monew.service;
 
 import com.part2.monew.dto.request.CommentRequest;
+import com.part2.monew.dto.request.CreateCommentRequest;
+import com.part2.monew.dto.response.CommentResponse;
 import com.part2.monew.dto.response.CursorResponse;
 import com.part2.monew.entity.CommentsManagement;
 import com.part2.monew.entity.NewsArticle;
@@ -11,17 +13,17 @@ import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Transactional(readOnly = true)
@@ -32,6 +34,9 @@ class CommentServiceImplTest {
 
     @Autowired
     private CommentService commentService;
+
+    @Autowired
+    private CommentRepository commentRepository;
 
     @Test
     @Transactional
@@ -78,4 +83,56 @@ class CommentServiceImplTest {
         assertThat(response.getHasNext()).isTrue();
         assertThat(response.getTotalElements()).isEqualTo(6);
     }
+
+
+    @DisplayName("댓글을 저장한다.")
+    @Test
+    @Transactional
+    void create() {
+        // given
+        User user = new User("tester", "test@example.com", "pass123", true, Timestamp.from(Instant.now()));
+        em.persist(user);
+
+        NewsArticle article = new NewsArticle("http://url.com", "제목", Timestamp.from(Instant.now()), "요약", 0L);
+        em.persist(article);
+
+        CreateCommentRequest comment = CreateCommentRequest.create( article.getId(), user.getId(), "내용");
+        em.flush();
+        em.clear();
+
+        // when
+        CommentResponse saved = commentService.create(comment);
+
+        // then
+        CommentsManagement fetched = commentRepository.findById(saved.getId())
+                .orElseThrow(() -> new RuntimeException("Saved comment not found"));
+
+        assertThat(fetched)
+                .extracting("user.id", "newsArticle.id", "content", "likeCount", "active")
+                .containsExactly(user.getId(), article.getId(), "내용", 0, true);
+
+    }
+
+    @DisplayName("댓글을 저장실패")
+    @Test
+    @Transactional
+    void createFailed() {
+        // given
+        User user = new User("tester", "test@example.com", "pass123", true, Timestamp.from(Instant.now()));
+        em.persist(user);
+
+        NewsArticle article = new NewsArticle("http://url.com", "제목", Timestamp.from(Instant.now()), "요약", 0L);
+        em.persist(article);
+
+        UUID userFailedId = UUID.randomUUID();
+
+        CreateCommentRequest comment = CreateCommentRequest.create(article.getId(), userFailedId, "내용");
+        em.flush();
+        em.clear();
+        // when // then
+        assertThatThrownBy( () -> commentService.create(comment))
+                .isInstanceOf(NoSuchElementException.class)
+                .hasMessage("user with id " + userFailedId + " not found");
+    }
+
 }

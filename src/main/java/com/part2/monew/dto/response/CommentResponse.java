@@ -11,7 +11,7 @@ import java.util.UUID;
 @Getter
 public class CommentResponse {
     private UUID id;
-    private UUID articledId;
+    private UUID articleId;
     private UUID userId;
     private String userNickname;
     private String content;
@@ -20,9 +20,9 @@ public class CommentResponse {
     private Timestamp createdAt;
 
     @Builder
-    private CommentResponse(UUID id, UUID articledId, UUID userId, String userNickname, String content, int likeCount, boolean likedByMe, Timestamp createdAt) {
+    private CommentResponse(UUID id, UUID articleId, UUID userId, String userNickname, String content, int likeCount, boolean likedByMe, Timestamp createdAt) {
         this.id = id;
-        this.articledId = articledId;
+        this.articleId = articleId;
         this.userId = userId;
         this.userNickname = userNickname;
         this.content = content;
@@ -34,7 +34,7 @@ public class CommentResponse {
     public static CommentResponse of(CommentsManagement comment) {
         return CommentResponse.builder()
                 .id(comment.getId())
-                .articledId(comment.getNewsArticle().getId())
+                .articleId(comment.getNewsArticle().getId())
                 .userId(comment.getUser().getId())
                 .userNickname(comment.getUser().getUsername())
                 .content(comment.getContent())

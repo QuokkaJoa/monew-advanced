@@ -46,6 +46,7 @@ public class CommentsManagement {
     @Column(nullable = false)
     private boolean active = true;
 
+
     @Builder
     private CommentsManagement(UUID id, User user, NewsArticle newsArticle, String content, int likeCount, Timestamp createdAt) {
         this.id = id;
@@ -56,15 +57,23 @@ public class CommentsManagement {
         this.createdAt = createdAt;
     }
 
-    public static CommentsManagement create(User user, NewsArticle newsArticle, String Content, int likeCount, Timestamp createAt) {
+    public static CommentsManagement create(User user, NewsArticle newsArticle, String content, int likeCount) {
         return CommentsManagement.builder()
                 .user(user)
                 .newsArticle(newsArticle)
-                .content(Content)
+                .content(content)
                 .likeCount(likeCount)
-                .createdAt(createAt)
                 .build();
     }
 
-
+    public static CommentsManagement create(User user, NewsArticle newsArticle, String content, int likeCount, Timestamp createAt) {
+        CommentsManagement cm = CommentsManagement.builder()
+                .user(user)
+                .newsArticle(newsArticle)
+                .content(content)
+                .likeCount(likeCount)
+                .build();
+        cm.createdAt = createAt;
+        return cm;
+    }
 }

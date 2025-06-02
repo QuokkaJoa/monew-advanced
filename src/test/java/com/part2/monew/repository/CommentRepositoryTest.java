@@ -8,19 +8,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 
 @DataJpaTest
 @Transactional(readOnly = true)
@@ -136,5 +131,41 @@ class CommentRepositoryTest {
 
         Timestamp nextAfter = results.get(results.size() - 1).getCreatedAt();
         assertThat(nextAfter).isEqualTo(checkTime);
+    }
+
+
+    @DisplayName("댓글을 저장한다.")
+    @Test
+    @Transactional
+    void create() {
+        // given
+        User user = new User("tester", "test@example.com", "pass123", true, Timestamp.from(Instant.now()));
+        em.persist(user);
+
+        NewsArticle article = new NewsArticle(
+                "http://url.com",
+                "제목",
+                Timestamp.from(Instant.now()),
+                "요약",
+                0L
+        );
+        em.persist(article);
+
+        CommentsManagement comment = CommentsManagement.create(user, article, "내용", 0);
+
+        // when
+        CommentsManagement saved = commentRepository.save(comment);
+        em.flush();
+        em.clear();
+
+        // then
+        CommentsManagement fetched = commentRepository.findById(saved.getId())
+                .orElseThrow(() -> new RuntimeException("Saved comment not found"));
+
+        assertThat(fetched)
+                .extracting("user.id", "newsArticle.id", "content", "likeCount", "active")
+                .containsExactly(user.getId(), article.getId(), "내용", 0, true);
+
+        assertThat(fetched.getCreatedAt()).isNotNull();
     }
 }
