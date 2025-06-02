@@ -21,9 +21,6 @@ public interface UserMapper {
     @Mapping(target = "updatedAt", ignore = true)
     User toEntity(UserCreateRequest request);
 
-    @Mapping(target = "nickname", source = "nickname")
-    void updateNickname(UserUpdateRequest request, @MappingTarget User user);
-
     @Mapping(target = "createdAt", expression = "java(user.getCreatedAt())")
     UserResponse toResponse(User user);
 
