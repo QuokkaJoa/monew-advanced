@@ -4,6 +4,9 @@ import com.part2.monew.dto.request.UserCreateRequest;
 import com.part2.monew.dto.request.UserUpdateRequest;
 import com.part2.monew.dto.response.UserResponse;
 import com.part2.monew.entity.User;
+import com.part2.monew.exception.EmailDuplicateException;
+import com.part2.monew.exception.NoPermissionException;
+import com.part2.monew.exception.UserNotFoundException;
 import com.part2.monew.mapper.UserMapper;
 import com.part2.monew.repository.UserRepository;
 import java.util.UUID;
@@ -18,7 +21,7 @@ public class UserService {
 
     public UserResponse createUser(UserCreateRequest request){
         if(userRepository.existsByEmail(request.email())){
-            throw new RuntimeException("Email already exists");
+            throw new EmailDuplicateException();
         }
 
         User user = userMapper.toEntity(request);
@@ -28,10 +31,10 @@ public class UserService {
 
     public UserResponse updateNickname(UUID userId, UUID requestUserId, UserUpdateRequest request) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(UserNotFoundException::new);
 
         if (!user.getId().equals(requestUserId)){
-            throw new RuntimeException("No permission to modify this user");
+            throw new NoPermissionException();
         }
         user.setNickname(request.getNickname());
         userRepository.save(user);
@@ -40,10 +43,10 @@ public class UserService {
 
     public void delete(UUID userId, UUID requestUserId) {
         User user = userRepository.findByIdAndActiveTrue(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(UserNotFoundException::new);
 
         if (!user.getId().equals(requestUserId)){
-            throw new RuntimeException("No permission to delete this user");
+            throw new NoPermissionException();
         }
 
         user.setActive(false);
@@ -52,10 +55,10 @@ public class UserService {
 
     public void deleteHard(UUID userId, UUID requestUserId) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(UserNotFoundException::new);
 
         if (!user.getId().equals(requestUserId)){
-            throw new RuntimeException("No permission to delete this user");
+            throw new NoPermissionException();
         }
 
         userRepository.delete(user);
