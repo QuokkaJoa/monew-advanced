@@ -1,6 +1,7 @@
 package com.part2.monew.service;
 
 import com.part2.monew.dto.request.UserCreateRequest;
+import com.part2.monew.dto.request.UserLoginRequest;
 import com.part2.monew.dto.request.UserUpdateRequest;
 import com.part2.monew.dto.response.UserResponse;
 import com.part2.monew.entity.User;
@@ -23,6 +24,19 @@ public class UserService {
 
         User user = userMapper.toEntity(request);
         userRepository.save(user);
+        return userMapper.toResponse(user);
+    }
+
+    public UserResponse loginUser(UserLoginRequest request){
+        String email = request.email();
+        String password = request.password();
+
+        User user = userRepository.findByEmailAndActiveTrue(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if(!user.getPassword().equals(password)){
+            throw new RuntimeException("Incorrect password");
+        }
         return userMapper.toResponse(user);
     }
 

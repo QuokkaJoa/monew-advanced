@@ -1,6 +1,7 @@
 package com.part2.monew.controller;
 
 import com.part2.monew.dto.request.UserCreateRequest;
+import com.part2.monew.dto.request.UserLoginRequest;
 import com.part2.monew.dto.request.UserUpdateRequest;
 import com.part2.monew.dto.response.UserResponse;
 import com.part2.monew.service.UserService;
@@ -27,6 +28,11 @@ public class UserController {
     @PostMapping("")
     public ResponseEntity<UserResponse> create(@RequestBody @Valid UserCreateRequest request) {
         return ResponseEntity.ok(userService.createUser(request));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<UserResponse> login(@RequestBody @Valid UserLoginRequest request) {
+        return ResponseEntity.ok(userService.loginUser(request));
     }
 
     @PatchMapping("/{userId}")
