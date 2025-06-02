@@ -4,7 +4,10 @@ import com.part2.monew.dto.request.UserCreateRequest;
 import com.part2.monew.dto.request.UserLoginRequest;
 import com.part2.monew.dto.request.UserUpdateRequest;
 import com.part2.monew.dto.response.UserResponse;
+import com.part2.monew.entity.User;
+import com.part2.monew.mapper.UserMapper;
 import com.part2.monew.service.UserService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserService userService;
+    private final UserMapper userMapper;
 
     @PostMapping("")
     public ResponseEntity<UserResponse> create(@RequestBody @Valid UserCreateRequest request) {
@@ -31,8 +35,13 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserResponse> login(@RequestBody @Valid UserLoginRequest request) {
-        return ResponseEntity.ok(userService.loginUser(request));
+    public ResponseEntity<UserResponse> login(
+            @RequestBody @Valid UserLoginRequest request,
+            HttpServletResponse response
+    ) {
+        User user = userService.loginUser(request);
+        response.setHeader("MoNew-Request-User-ID", user.getId().toString());
+        return ResponseEntity.ok(userMapper.toResponse(user));
     }
 
     @PatchMapping("/{userId}")

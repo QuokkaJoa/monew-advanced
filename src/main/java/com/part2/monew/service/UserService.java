@@ -27,7 +27,7 @@ public class UserService {
         return userMapper.toResponse(user);
     }
 
-    public UserResponse loginUser(UserLoginRequest request){
+    public User loginUser(UserLoginRequest request){
         String email = request.email();
         String password = request.password();
 
@@ -37,7 +37,7 @@ public class UserService {
         if(!user.getPassword().equals(password)){
             throw new RuntimeException("Incorrect password");
         }
-        return userMapper.toResponse(user);
+        return user;
     }
 
     public UserResponse updateNickname(UUID userId, UUID requestUserId, UserUpdateRequest request) {
