@@ -1,6 +1,7 @@
 package com.part2.monew.service;
 
 import com.part2.monew.dto.request.UserCreateRequest;
+import com.part2.monew.dto.request.UserLoginRequest;
 import com.part2.monew.dto.request.UserUpdateRequest;
 import com.part2.monew.dto.response.UserResponse;
 import com.part2.monew.entity.User;
@@ -10,9 +11,10 @@ import com.part2.monew.global.exception.user.NoPermissionToUpdateException;
 import com.part2.monew.global.exception.user.UserNotFoundException;
 import com.part2.monew.mapper.UserMapper;
 import com.part2.monew.repository.UserRepository;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +32,19 @@ public class UserService {
         return userMapper.toResponse(user);
     }
 
+    public User loginUser(UserLoginRequest request){
+        String email = request.email();
+        String password = request.password();
+
+        User user = userRepository.findByEmailAndActiveTrue(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if(!user.getPassword().equals(password)){
+            throw new RuntimeException("Incorrect password");
+        }
+        return user;
+    }
+
     public UserResponse updateNickname(UUID userId, UUID requestUserId, UserUpdateRequest request) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new UserNotFoundException("해당 사용자를 찾을 수 없습니다."));
@@ -37,7 +52,8 @@ public class UserService {
         if (!user.getId().equals(requestUserId)){
             throw new NoPermissionToUpdateException("사용자 수정 권한이 없습니다.");
         }
-        user.setNickname(request.getNickname());
+
+        user.setUsername(request.getNickname());
         userRepository.save(user);
         return userMapper.toResponse(user);
     }

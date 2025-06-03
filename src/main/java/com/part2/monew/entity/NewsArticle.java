@@ -57,4 +57,11 @@ public class NewsArticle {
     @OneToMany(mappedBy = "newsArticle", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ActivityDetail> views = new ArrayList<>();
 
+    public NewsArticle(String sourceUrl, String title, Timestamp publishedDate, String summary, Long viewCount) {
+        this.sourceUrl = sourceUrl;
+        this.title = title;
+        this.publishedDate = publishedDate;
+        this.summary = summary;
+        this.viewCount = viewCount;
+    }
 }
