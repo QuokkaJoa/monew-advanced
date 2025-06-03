@@ -19,9 +19,9 @@ spring:
     show-sql: true
     properties:
       hibernate:
+        default_batch_fetch_size: 500
         format_sql: true
         use_sql_comments: true
-    open-in-view: false
 
   sql:
     init:

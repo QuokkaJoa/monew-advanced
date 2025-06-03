@@ -2,6 +2,7 @@ package com.part2.monew.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
@@ -13,6 +14,7 @@ import java.util.UUID;
 
 @Entity
 @Getter
+@Setter
 @Table(name = "kewords")
 public class Keyword {
     @Id
