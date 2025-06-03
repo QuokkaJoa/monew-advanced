@@ -3,6 +3,7 @@ package com.part2.monew.global.exception;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -23,5 +24,12 @@ public class GlobalExceptionHandler {
     log.error("handleException: {} (request path: {})", ex.getMessage(), request.getRequestURI(), ex);
     final ErrorResponse response = ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR, request.getRequestURI());
     return new ResponseEntity<>(response, ErrorCode.INTERNAL_SERVER_ERROR.getStatus());
+  }
+
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  protected ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex, HttpServletRequest request) {
+    log.warn("HANDLING MethodArgumentNotValidException: {} (request path: {})", ex.getMessage(), request.getRequestURI()); // 로그 메시지 변경하여 확인
+    final ErrorResponse response = ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE, request.getRequestURI(), ex.getBindingResult());
+    return new ResponseEntity<>(response, ErrorCode.INVALID_INPUT_VALUE.getStatus());
   }
 }
