@@ -76,4 +76,8 @@ public class CommentsManagement {
         cm.createdAt = createAt;
         return cm;
     }
+
+    public void update(String content) {
+        this.content = content;
+    }
 }

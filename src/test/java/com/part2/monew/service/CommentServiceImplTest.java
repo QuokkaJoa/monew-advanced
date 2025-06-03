@@ -135,4 +135,34 @@ class CommentServiceImplTest {
                 .hasMessage("user with id " + userFailedId + " not found");
     }
 
+    @DisplayName("댓글을 수정한다.")
+    @Test
+    @Transactional
+    void update() {
+        // given
+        User user = new User("tester", "test@example.com", "pass123", true, Timestamp.from(Instant.now()));
+        em.persist(user);
+
+        NewsArticle article = new NewsArticle("http://url.com", "제목", Timestamp.from(Instant.now()), "요약", 0L);
+        em.persist(article);
+
+        CreateCommentRequest comment = CreateCommentRequest.create( article.getId(), user.getId(), "내용");
+        CommentResponse saved = commentService.create(comment);
+        em.flush();
+        em.clear();
+
+        // when
+        commentService.update(saved.getId(), "새로운 내용");
+
+        // then
+        CommentsManagement fetched = commentRepository.findById(saved.getId())
+                .orElseThrow(() -> new RuntimeException("Saved comment not found"));
+
+        assertThat(fetched)
+                .extracting("user.id", "newsArticle.id", "content", "likeCount", "active")
+                .containsExactly(user.getId(), article.getId(), "새로운 내용", 0, true);
+
+
+    }
+
 }
