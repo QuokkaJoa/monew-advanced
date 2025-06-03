@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -58,6 +59,16 @@ public class CommentServiceImpl implements CommentService {
 
         return CommentResponse.of(saveComment);
 
+    }
+
+    @Override
+    public CommentResponse update(UUID id, String content) {
+        CommentsManagement commentsManagement = commentRepository.findById(id)
+                .orElseThrow( () ->  new NoSuchElementException("comment with id " + id + " not found"));
+
+        commentsManagement.update(content);
+
+        return CommentResponse.of(commentsManagement);
     }
 
 }

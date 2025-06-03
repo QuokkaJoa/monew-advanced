@@ -14,6 +14,12 @@ public enum ErrorCode {
   INVALID_TYPE_VALUE(HttpStatus.BAD_REQUEST, "C004", "요청 값의 타입이 올바르지 않습니다."),
   ACCESS_DENIED(HttpStatus.FORBIDDEN, "C005", "접근 권한이 없습니다."),
 
+  // User Errors (Uxxx)
+  USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "해당 사용자를 찾을 수 없습니다."),
+  EMAIL_DUPLICATED(HttpStatus.CONFLICT, "U002", "이미 사용 중인 이메일입니다."),
+  NO_PERMISSION_TO_UPDATE(HttpStatus.FORBIDDEN, "U003", "사용자를 수정할 권한이 없습니다."),
+  NO_PERMISSION_TO_DELETE(HttpStatus.FORBIDDEN, "U004", "사용자를 삭제할 권한이 없습니다."),
+
   // Interest Errors (Ixxx)
   INTEREST_NAME_ALREADY_EXISTS(HttpStatus.CONFLICT, "I001", "이미 존재하는 관심사 이름입니다."),
   SIMILAR_INTEREST_EXISTS(HttpStatus.CONFLICT, "I002", "매우 유사한 이름의 관심사가 이미 존재합니다. 다른 이름을 사용해주세요."),
@@ -21,6 +27,7 @@ public enum ErrorCode {
 
   // Keyword Errors (Kxxx)
   KEYWORD_NOT_FOUND(HttpStatus.NOT_FOUND, "K001", "해당 키워드를 찾을 수 없습니다.");
+
 
   private final HttpStatus status;
   private final String code;

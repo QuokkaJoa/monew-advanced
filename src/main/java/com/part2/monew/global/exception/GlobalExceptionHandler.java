@@ -11,6 +11,15 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  protected ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex, HttpServletRequest request) {
+    log.warn("Validation failed: {} (request path: {})", ex.getMessage(), request.getRequestURI(), ex);
+    return new ResponseEntity<>(
+        ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE, request.getRequestURI(), ex.getBindingResult()),
+        ErrorCode.INVALID_INPUT_VALUE.getStatus()
+    );
+  }
+
   @ExceptionHandler(BusinessException.class)
   protected ResponseEntity<ErrorResponse> handleBusinessException(final BusinessException ex, HttpServletRequest request) {
     log.warn("handleBusinessException: {} (request path: {})", ex.getMessage(), request.getRequestURI(), ex);
@@ -24,12 +33,5 @@ public class GlobalExceptionHandler {
     log.error("handleException: {} (request path: {})", ex.getMessage(), request.getRequestURI(), ex);
     final ErrorResponse response = ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR, request.getRequestURI());
     return new ResponseEntity<>(response, ErrorCode.INTERNAL_SERVER_ERROR.getStatus());
-  }
-
-  @ExceptionHandler(MethodArgumentNotValidException.class)
-  protected ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex, HttpServletRequest request) {
-    log.warn("HANDLING MethodArgumentNotValidException: {} (request path: {})", ex.getMessage(), request.getRequestURI()); // 로그 메시지 변경하여 확인
-    final ErrorResponse response = ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE, request.getRequestURI(), ex.getBindingResult());
-    return new ResponseEntity<>(response, ErrorCode.INVALID_INPUT_VALUE.getStatus());
   }
 }
