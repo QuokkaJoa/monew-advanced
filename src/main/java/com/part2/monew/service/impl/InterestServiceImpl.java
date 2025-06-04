@@ -1,4 +1,4 @@
-package com.part2.monew.service.Impl;
+package com.part2.monew.service.impl;
 
 import com.part2.monew.dto.request.InterestRegisterRequestDto;
 import com.part2.monew.dto.request.InterestUpdateRequestDto;
