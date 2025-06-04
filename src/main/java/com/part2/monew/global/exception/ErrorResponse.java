@@ -1,68 +1,44 @@
 package com.part2.monew.global.exception;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
-import lombok.Getter;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 
-@Getter
-@JsonInclude(Include.NON_NULL)
-public class ErrorResponse {
-  private final LocalDateTime timestamp;
-  private final int status;
-  private final String error;
-  private final String code;
-  private final String message;
-  private final String path;
-  private List<CustomFieldError> fieldErrors;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
-  private ErrorResponse(ErrorCode errorCode, String path, String customMessage) {
-    this.timestamp = LocalDateTime.now();
-    this.status = errorCode.getStatus().value();
-    this.error = errorCode.getStatus().getReasonPhrase();
-    this.code = errorCode.getCode();
-    this.message = customMessage != null ? customMessage : errorCode.getMessage();
-    this.path = path;
-  }
-
-  private ErrorResponse(ErrorCode errorCode, String path, BindingResult bindingResult) {
-    this.timestamp = LocalDateTime.now();
-    this.status = errorCode.getStatus().value();
-    this.error = errorCode.getStatus().getReasonPhrase();
-    this.code = errorCode.getCode();
-    this.message = errorCode.getMessage();
-    this.path = path;
-    this.fieldErrors = CustomFieldError.from(bindingResult);
-  }
+@JsonInclude(JsonInclude.Include.NON_NULL) // null인 필드는 JSON 응답에서 제외
+public record ErrorResponse(
+    LocalDateTime timestamp,
+    int status,
+    String error,
+    String code,
+    String message,
+    String path,
+    List<CustomFieldError> fieldErrors
+) {
 
   public static ErrorResponse of(ErrorCode errorCode, String path) {
-    return new ErrorResponse(errorCode, path, (String) null);
+    return new ErrorResponse(LocalDateTime.now(), errorCode.getStatus().value(), errorCode.getStatus().getReasonPhrase(),
+        errorCode.getCode(), errorCode.getMessage(), path, null);
   }
 
   public static ErrorResponse of(ErrorCode errorCode, String path, String customMessage) {
-    return new ErrorResponse(errorCode, path, customMessage);
+    return new ErrorResponse(LocalDateTime.now(), errorCode.getStatus().value(), errorCode.getStatus().getReasonPhrase(),
+        errorCode.getCode(), customMessage != null ? customMessage : errorCode.getMessage(), path, null);
   }
 
   public static ErrorResponse of(ErrorCode errorCode, String path, BindingResult bindingResult) {
-    return new ErrorResponse(errorCode, path, bindingResult);
+    return new ErrorResponse(LocalDateTime.now(), errorCode.getStatus().value(), errorCode.getStatus().getReasonPhrase(),
+        errorCode.getCode(), errorCode.getMessage(), path, CustomFieldError.from(bindingResult));
   }
 
-  @Getter
-  public static class CustomFieldError {
-    private final String field;
-    private final String value;
-    private final String reason;
-
-    private CustomFieldError(String field, String value, String reason) {
-      this.field = field;
-      this.value = value;
-      this.reason = reason;
-    }
-
+  public record CustomFieldError(
+      String field,
+      String value,
+      String reason
+  ) {
     public static List<CustomFieldError> from(BindingResult bindingResult) {
       final List<FieldError> errors = bindingResult.getFieldErrors();
       return errors.stream()
