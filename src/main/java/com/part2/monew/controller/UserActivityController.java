@@ -17,7 +17,6 @@ public class UserActivityController {
 
   @GetMapping("/{userId}")
   public ResponseEntity<UserActivityResponse> getUserActivity(@PathVariable UUID userId) {
-    UserActivityResponse response = userActivityService.getUserActivity(userId);
-    return ResponseEntity.ok(response);
+    return ResponseEntity.ok(userActivityService.getUserActivity(userId));
   }
 }
