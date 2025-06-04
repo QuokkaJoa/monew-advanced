@@ -2,7 +2,7 @@ package com.part2.monew.service;
 
 import com.part2.monew.dto.request.CommentRequest;
 import com.part2.monew.dto.request.CreateCommentRequest;
-import com.part2.monew.dto.response.CommentLikeReponse;
+import com.part2.monew.dto.response.CommentLikeResponse;
 import com.part2.monew.dto.response.CommentResponse;
 import com.part2.monew.dto.response.CursorResponse;
 import com.part2.monew.entity.CommentsManagement;
@@ -183,7 +183,7 @@ class CommentServiceImplTest {
         commentRepository.save(comment);
 
         // when
-        CommentLikeReponse response = commentService.likeComment(comment.getId(), user.getId());
+        CommentLikeResponse response = commentService.likeComment(comment.getId(), user.getId());
 
         // then
         assertThat(response)
@@ -226,7 +226,7 @@ class CommentServiceImplTest {
 
         commentRepository.save(comment);
 
-        CommentLikeReponse response = commentService.likeComment(comment.getId(), user.getId());
+        CommentLikeResponse response = commentService.likeComment(comment.getId(), user.getId());
 
         // when then
         assertThatThrownBy(() -> commentService.likeComment(comment.getId(), user.getId()))
@@ -251,7 +251,7 @@ class CommentServiceImplTest {
 
         commentRepository.save(comment);
 
-        CommentLikeReponse response = commentService.likeComment(comment.getId(), user.getId());
+        CommentLikeResponse response = commentService.likeComment(comment.getId(), user.getId());
 
         // when
         commentService.unlikeComment(comment.getId(), user.getId());

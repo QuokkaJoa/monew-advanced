@@ -1,9 +1,9 @@
-package com.part2.monew.service.Impl;
+package com.part2.monew.service.impl;
 
 
 import com.part2.monew.dto.request.CommentRequest;
 import com.part2.monew.dto.request.CreateCommentRequest;
-import com.part2.monew.dto.response.CommentLikeReponse;
+import com.part2.monew.dto.response.CommentLikeResponse;
 import com.part2.monew.dto.response.CommentResponse;
 import com.part2.monew.dto.response.CursorResponse;
 import com.part2.monew.entity.CommentLike;
@@ -80,7 +80,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
-    public CommentLikeReponse likeComment(UUID id, UUID userId) {
+    public CommentLikeResponse likeComment(UUID id, UUID userId) {
         Optional<CommentLike> existingLikeOpt = commentLikeRepository.findByCommentsManagement_IdAndUser_Id(id, userId);
 
         existingLikeOpt.ifPresent(cl -> {
@@ -103,7 +103,7 @@ public class CommentServiceImpl implements CommentService {
 
         commentsManagement.updateTotalCount(totalLike);
 
-        return CommentLikeReponse.of(commentsManagement, saveComment);
+        return CommentLikeResponse.of(commentsManagement, saveComment);
     }
 
     @Override
