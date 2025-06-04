@@ -12,7 +12,7 @@ import com.part2.monew.global.exception.SimilarInterestExistsException;
 import com.part2.monew.mapper.InterestMapper;
 import com.part2.monew.repository.InterestRepository;
 import com.part2.monew.repository.KeywordRepository;
-import com.part2.monew.service.Impl.InterestServiceImpl;
+import com.part2.monew.service.impl.InterestServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

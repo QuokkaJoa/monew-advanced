@@ -1,4 +1,4 @@
-package com.part2.monew.service.Impl;
+package com.part2.monew.service.impl;
 
 
 import com.part2.monew.dto.request.CommentRequest;
@@ -10,6 +10,12 @@ import com.part2.monew.entity.CommentLike;
 import com.part2.monew.entity.CommentsManagement;
 import com.part2.monew.entity.NewsArticle;
 import com.part2.monew.entity.User;
+import com.part2.monew.global.exception.article.ArticleNotFoundException;
+import com.part2.monew.global.exception.comment.CommentIsActiveException;
+import com.part2.monew.global.exception.comment.CommentLikeDuplication;
+import com.part2.monew.global.exception.comment.CommentNotFoundException;
+import com.part2.monew.global.exception.comment.CommentUnlikeDuplication;
+import com.part2.monew.global.exception.user.UserNotFoundException;
 import com.part2.monew.repository.CommentLikeRepository;
 import com.part2.monew.repository.CommentRepository;
 import com.part2.monew.repository.NewsArticleRepository;
@@ -20,7 +26,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -53,11 +58,11 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     public CommentResponse create(CreateCommentRequest requeset) {
         User user = userRepository.findById(requeset.getUserId())
-                .orElseThrow( () ->  new NoSuchElementException("user with id " + requeset.getUserId() + " not found"));
+                .orElseThrow(UserNotFoundException::new);
 
 
         NewsArticle article = articleRepository.findById(requeset.getArticleId())
-                .orElseThrow( () ->  new NoSuchElementException("article with id " + requeset.getUserId() + " not found"));
+                .orElseThrow(ArticleNotFoundException::new);
 
         CommentsManagement comment = CommentsManagement.create(user, article, requeset.getContent(), 0);
 
@@ -71,7 +76,7 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     public CommentResponse update(UUID id, String content) {
         CommentsManagement commentsManagement = commentRepository.findById(id)
-                .orElseThrow( () ->  new NoSuchElementException("comment with id " + id + " not found"));
+                .orElseThrow(CommentNotFoundException::new);
 
         commentsManagement.update(content);
 
@@ -84,15 +89,15 @@ public class CommentServiceImpl implements CommentService {
         Optional<CommentLike> existingLikeOpt = commentLikeRepository.findByCommentsManagement_IdAndUser_Id(id, userId);
 
         existingLikeOpt.ifPresent(cl -> {
-            throw new IllegalArgumentException("이미 좋아요를 눌렀습니다.");
+            throw new CommentLikeDuplication();
         });
 
 
         User user = userRepository.findById(userId)
-                .orElseThrow( () ->  new NoSuchElementException("user with id " + userId + " not found"));
+                .orElseThrow(UserNotFoundException::new);
 
         CommentsManagement commentsManagement = commentRepository.findById(id)
-                .orElseThrow( () ->  new NoSuchElementException("comment with id " + id + " not found"));
+                .orElseThrow(CommentNotFoundException::new);
 
 
         CommentLike commentLike = CommentLike.create(user, commentsManagement);
@@ -110,10 +115,10 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     public void unlikeComment(UUID id, UUID userId) {
         CommentLike commentLike = commentLikeRepository.findByCommentsManagement_IdAndUser_Id(id, userId)
-                .orElseThrow(( ) -> new NoSuchElementException("좋아요 취소를 이미 눌렀습니다."));
+                .orElseThrow(CommentUnlikeDuplication::new);
 
         CommentsManagement commentsManagement = commentRepository.findById(id)
-                .orElseThrow( () ->  new NoSuchElementException("comment with id " + id + " not found"));
+                .orElseThrow(CommentNotFoundException::new);
 
 
         commentLikeRepository.deleteById(commentLike.getId());
@@ -127,7 +132,7 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     public void deleteComment(UUID id) {
         CommentsManagement commentsManagement = commentRepository.findById(id)
-                .orElseThrow( () ->  new NoSuchElementException("comment with id " + id + " not found"));
+                .orElseThrow(CommentNotFoundException::new);
 
         commentsManagement.delete();
 
@@ -137,10 +142,10 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     public void hardDeleteComment(UUID id) {
         CommentsManagement commentsManagement = commentRepository.findById(id)
-                .orElseThrow( () ->  new NoSuchElementException("comment with id " + id + " not found"));
+                .orElseThrow(CommentNotFoundException::new);
 
         if(commentsManagement.isActive()){
-            throw new RuntimeException("isisActive " + commentsManagement.isActive() +"는 삭제를 진행할 수 없습니다.");
+            throw new CommentIsActiveException();
         }
 
         commentRepository.deleteById(id);

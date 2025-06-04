@@ -1,4 +1,4 @@
-package com.part2.monew.service.Impl;
+package com.part2.monew.service.impl;
 
 import com.part2.monew.dto.request.InterestRegisterRequestDto;
 import com.part2.monew.dto.request.InterestUpdateRequestDto;
@@ -14,14 +14,15 @@ import com.part2.monew.mapper.InterestMapper;
 import com.part2.monew.repository.InterestRepository;
 import com.part2.monew.repository.KeywordRepository;
 import com.part2.monew.service.InterestService;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.similarity.JaroWinklerSimilarity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @Slf4j
