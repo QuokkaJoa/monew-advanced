@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Getter
 @Builder
-public class NewsArticleSummaryDto {
+public class UserArticleViewsActivityDto {
   private UUID id;
   private UUID viewedBy;
   private Timestamp createdAt;
@@ -23,9 +23,9 @@ public class NewsArticleSummaryDto {
   private Long articleCommentCount;
   private Long articleViewCount;
 
-  public static NewsArticleSummaryDto of(ActivityDetail activity) {
+  public static UserArticleViewsActivityDto of(ActivityDetail activity) {
     NewsArticle article = activity.getNewsArticle();
-    return NewsArticleSummaryDto.builder()
+    return UserArticleViewsActivityDto.builder()
         .id(activity.getId())
         .viewedBy(activity.getUser().getId())
         .createdAt(activity.getViewedAt())

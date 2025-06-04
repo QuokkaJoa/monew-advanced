@@ -29,22 +29,22 @@ public class UserActivityServiceImpl implements UserActivityService {
     User user = userRepository.findByIdAndActiveTrue(userId)
         .orElseThrow(UserNotFoundException::new);
 
-    List<UserSubscriberResponse> subscriptions = userSubscriberRepository.findByUser(user).stream()
-        .map(UserSubscriberResponse::of)
+    List<UserSubscriptionActivityResponse> subscriptions = userSubscriberRepository.findByUser(user).stream()
+        .map(UserSubscriptionActivityResponse::of)
         .toList();
 
-    List<CommentActivityDto> comments = commentRepository.findTop10RecentCommentsByUserId(userId).stream()
-        .map(CommentActivityDto::of)
+    List<UserCommentActivityDto> comments = commentRepository.findTop10RecentCommentsByUserId(userId).stream()
+        .map(UserCommentActivityDto::of)
         .toList();
 
-    List<CommentLikeActivityDto> commentLikes = commentLikeRepository
+    List<UserCommentLikeActivityDto> commentLikes = commentLikeRepository
         .findTop10ByUser_IdOrderByCreatedAtDesc(userId).stream()
-        .map(CommentLikeActivityDto::of)
+        .map(UserCommentLikeActivityDto::of)
         .toList();
 
-    List<NewsArticleSummaryDto> articleViews = activityDetailRepository
+    List<UserArticleViewsActivityDto> articleViews = activityDetailRepository
         .findTop10ByUserAndNewsArticleIsNotNullOrderByViewedAtDesc(user).stream()
-        .map(NewsArticleSummaryDto::of)
+        .map(UserArticleViewsActivityDto::of)
         .toList();
 
     return UserActivityResponse.builder()

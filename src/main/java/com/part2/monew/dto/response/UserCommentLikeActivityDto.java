@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Getter
 @Builder
-public class CommentLikeActivityDto {
+public class UserCommentLikeActivityDto {
   private UUID id;
   private Timestamp createdAt;
   private UUID commentId;
@@ -22,10 +22,10 @@ public class CommentLikeActivityDto {
   private int commentLikeCount;
   private Timestamp commentCreatedAt;
 
-  public static CommentLikeActivityDto of(CommentLike commentLike) {
+  public static UserCommentLikeActivityDto of(CommentLike commentLike) {
     CommentsManagement comment = commentLike.getCommentsManagement();
 
-    return CommentLikeActivityDto.builder()
+    return UserCommentLikeActivityDto.builder()
         .id(commentLike.getId())
         .createdAt(commentLike.getCreatedAt())
         .commentId(comment.getId())

@@ -16,10 +16,10 @@ public class UserActivityResponse {
     private String nickname;
     private Timestamp createdAt;
 
-    private List<UserSubscriberResponse> subscriptions;
-    private List<CommentActivityDto> comments;
-    private List<CommentLikeActivityDto> commentLikes;
-    private List<NewsArticleSummaryDto> articleViews;
+    private List<UserSubscriptionActivityResponse> subscriptions;
+    private List<UserCommentActivityDto> comments;
+    private List<UserCommentLikeActivityDto> commentLikes;
+    private List<UserArticleViewsActivityDto> articleViews;
 
 }
 

@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Getter
 @Builder
-public class CommentActivityDto {
+public class UserCommentActivityDto {
   private UUID id;
   private UUID articleId;
   private String articleTitle;
@@ -20,9 +20,9 @@ public class CommentActivityDto {
   private int likeCount;
   private Timestamp createdAt;
 
-  public static CommentActivityDto of(CommentsManagement comment) {
+  public static UserCommentActivityDto of(CommentsManagement comment) {
     NewsArticle article = comment.getNewsArticle();
-    return CommentActivityDto.builder()
+    return UserCommentActivityDto.builder()
         .id(comment.getId())
         .articleId(article.getId())
         .articleTitle(article.getTitle())
