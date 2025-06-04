@@ -2,6 +2,7 @@ package com.part2.monew.service;
 
 import com.part2.monew.dto.request.CommentRequest;
 import com.part2.monew.dto.request.CreateCommentRequest;
+import com.part2.monew.dto.response.CommentLikeReponse;
 import com.part2.monew.dto.response.CommentResponse;
 import com.part2.monew.dto.response.CursorResponse;
 import com.part2.monew.entity.CommentsManagement;
@@ -96,7 +97,7 @@ class CommentServiceImplTest {
         NewsArticle article = new NewsArticle("http://url.com", "제목", Timestamp.from(Instant.now()), "요약", 0L);
         em.persist(article);
 
-        CreateCommentRequest comment = CreateCommentRequest.create( article.getId(), user.getId(), "내용");
+        CreateCommentRequest comment = CreateCommentRequest.create(article.getId(), user.getId(), "내용");
         em.flush();
         em.clear();
 
@@ -130,7 +131,7 @@ class CommentServiceImplTest {
         em.flush();
         em.clear();
         // when // then
-        assertThatThrownBy( () -> commentService.create(comment))
+        assertThatThrownBy(() -> commentService.create(comment))
                 .isInstanceOf(NoSuchElementException.class)
                 .hasMessage("user with id " + userFailedId + " not found");
     }
@@ -146,7 +147,7 @@ class CommentServiceImplTest {
         NewsArticle article = new NewsArticle("http://url.com", "제목", Timestamp.from(Instant.now()), "요약", 0L);
         em.persist(article);
 
-        CreateCommentRequest comment = CreateCommentRequest.create( article.getId(), user.getId(), "내용");
+        CreateCommentRequest comment = CreateCommentRequest.create(article.getId(), user.getId(), "내용");
         CommentResponse saved = commentService.create(comment);
         em.flush();
         em.clear();
@@ -165,4 +166,125 @@ class CommentServiceImplTest {
 
     }
 
+
+    @DisplayName("댓글에 좋아요를 누른다.")
+    @Test
+    @Transactional
+    void likeComment() {
+        // given
+        User user = new User("tester", "test@example.com", "pass123", true, Timestamp.from(Instant.now()));
+        em.persist(user);
+
+        NewsArticle article = new NewsArticle("http://url.com", "제목", Timestamp.from(Instant.now()), "요약", 0L);
+        em.persist(article);
+
+        CommentsManagement comment = CommentsManagement.create(user, article, "댓글", 0);
+
+        commentRepository.save(comment);
+
+        // when
+        CommentLikeReponse response = commentService.likeComment(comment.getId(), user.getId());
+
+        // then
+        assertThat(response)
+                .extracting(
+                        "id",
+                        "likeBy",
+                        "createdAt",
+                        "commentId",
+                        "articleId",
+                        "commentUserId",
+                        "commentUserNickname",
+                        "content",
+                        "likeCount",
+                        "commentCreatedAt")
+                .containsExactly(
+                        response.getId(),
+                        response.getLikeBy(),
+                        response.getCreatedAt(),
+                        comment.getId(),
+                        article.getId(),
+                        comment.getUser().getId(),
+                        comment.getUser().getUsername(),
+                        comment.getContent(),
+                        1,
+                        comment.getCreatedAt());
+    }
+
+    @DisplayName("댓글 좋아요가 중복 호출되면 예외가 발생한다.")
+    @Test
+    @Transactional
+    void likeDuplicatonComment() {
+        // given
+        User user = new User("tester", "test@example.com", "pass123", true, Timestamp.from(Instant.now()));
+        em.persist(user);
+
+        NewsArticle article = new NewsArticle("http://url.com", "제목", Timestamp.from(Instant.now()), "요약", 0L);
+        em.persist(article);
+
+        CommentsManagement comment = CommentsManagement.create(user, article, "댓글", 0);
+
+        commentRepository.save(comment);
+
+        CommentLikeReponse response = commentService.likeComment(comment.getId(), user.getId());
+
+        // when then
+        assertThatThrownBy(() -> commentService.likeComment(comment.getId(), user.getId()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("이미 좋아요를 눌렀습니다.");
+
+    }
+
+
+    @DisplayName("댓글에 좋아요를 한번더 누른다.")
+    @Test
+    @Transactional
+    void unlikeComment() {
+        // given
+        User user = new User("tester", "test@example.com", "pass123", true, Timestamp.from(Instant.now()));
+        em.persist(user);
+
+        NewsArticle article = new NewsArticle("http://url.com", "제목", Timestamp.from(Instant.now()), "요약", 0L);
+        em.persist(article);
+
+        CommentsManagement comment = CommentsManagement.create(user, article, "댓글", 0);
+
+        commentRepository.save(comment);
+
+        CommentLikeReponse response = commentService.likeComment(comment.getId(), user.getId());
+
+        // when
+        commentService.unlikeComment(comment.getId(), user.getId());
+        em.flush();
+        em.clear();
+
+        // then
+        CommentsManagement updated = commentRepository.findById(comment.getId())
+                .orElseThrow(() -> new AssertionError("댓글이 DB에 존재하지 않습니다."));
+
+        assertThat(updated.getLikeCount()).isEqualTo(0);
+    }
+
+
+    @DisplayName("댓글 좋아요 취소가 중복 호출되면 예외가 발생한다.")
+    @Test
+    @Transactional
+    void unlikeDuplicatonComment() {
+        // given
+        User user = new User("tester", "test@example.com", "pass123", true, Timestamp.from(Instant.now()));
+        em.persist(user);
+
+        NewsArticle article = new NewsArticle("http://url.com", "제목", Timestamp.from(Instant.now()), "요약", 0L);
+        em.persist(article);
+
+        CommentsManagement comment = CommentsManagement.create(user, article, "댓글", 0);
+
+        commentRepository.save(comment);
+
+        // when then
+        assertThatThrownBy(() -> commentService.unlikeComment(comment.getId(), user.getId()))
+                .isInstanceOf(NoSuchElementException.class)
+                .hasMessage("좋아요 취소를 이미 눌렀습니다.");
+
+    }
 }

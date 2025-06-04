@@ -4,10 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.part2.monew.dto.request.CommentRequest;
 import com.part2.monew.dto.request.CreateCommentRequest;
 import com.part2.monew.dto.request.UpdateCommentRequest;
+import com.part2.monew.dto.response.CommentLikeReponse;
 import com.part2.monew.dto.response.CommentResponse;
 import com.part2.monew.service.CommentService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -22,8 +24,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(CommentController.class)
 class CommentControllerTest {
@@ -114,5 +115,43 @@ class CommentControllerTest {
                 .andExpect(jsonPath("$.id").value(commentId.toString()))
                 .andExpect(jsonPath("$.content").value(fakeResponse.getContent()));
 
+    }
+
+    @DisplayName("댓글 좋아요를 성공적으로 처리한다")
+    @Test
+    void likeComment_success() throws Exception {
+        UUID commentId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+
+        CommentLikeReponse fakeResponse = CommentLikeReponse.builder()
+                .id(UUID.randomUUID())                       // 좋아요 엔티티 ID
+                .likeBy(userId)                              // 좋아요 누른 사용자 ID
+                .createdAt(Timestamp.from(Instant.now()))    // 좋아요 생성된 시각
+                .commentId(commentId)                        // 좋아요가 달린 댓글 ID
+                .articleId(UUID.randomUUID())                // 댓글이 달린 기사 ID
+                .commentUserId(UUID.randomUUID())            // 댓글 작성자 ID
+                .commentUserNickname("tester")               // 댓글 작성자 닉네임
+                .content("댓글 내용")                         // 댓글 본문
+                .likeCount(5)                               // 최종 좋아요 개수
+                .commentCreatedAt(Timestamp.from(Instant.now().minusSeconds(3600)))
+                .build();
+
+        // commentService.likeComment(댓글ID, 사용자ID) 호출 시 fakeResponse를 반환하도록 stubbing
+        when(commentService.likeComment(ArgumentMatchers.eq(commentId), ArgumentMatchers.eq(userId)))
+                .thenReturn(fakeResponse);
+
+        //--- when & then ---
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/comments/{commentId}/comment-likes", commentId)
+                        .header("Monew-Request-User-ID", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                // 반환된 JSON에서 id, likeBy, commentId, likeCount 등이 정확히 담겨있는지 확인
+                .andExpect(jsonPath("$.id").value(fakeResponse.getId().toString()))
+                .andExpect(jsonPath("$.likeBy").value(userId.toString()))
+                .andExpect(jsonPath("$.commentId").value(commentId.toString()))
+                .andExpect(jsonPath("$.likeCount").value((int) (long) fakeResponse.getLikeCount()))
+                .andExpect(jsonPath("$.commentUserNickname").value("tester"))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON));
     }
 }

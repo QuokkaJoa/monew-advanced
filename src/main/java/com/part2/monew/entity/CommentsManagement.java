@@ -80,4 +80,8 @@ public class CommentsManagement {
     public void update(String content) {
         this.content = content;
     }
+
+    public void updateTotalCount(int likeCount) {
+        this.likeCount = likeCount;
+    }
 }
