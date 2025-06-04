@@ -3,6 +3,7 @@ package com.part2.monew.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.part2.monew.dto.request.InterestRegisterRequestDto;
 import com.part2.monew.dto.request.InterestUpdateRequestDto;
+import com.part2.monew.dto.response.CursorPageResponse;
 import com.part2.monew.dto.response.InterestDto;
 import com.part2.monew.global.exception.BusinessException;
 import com.part2.monew.global.exception.ErrorCode;
@@ -14,6 +15,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,11 +29,13 @@ import org.springframework.test.web.servlet.ResultActions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(InterestController.class)
@@ -48,6 +52,12 @@ class InterestControllerTest {
   private InterestService interestService;
 
   private final String BASE_URL = "/api/interests";
+  private UUID requestUserId;
+
+  @BeforeEach
+  void setUp() {
+    requestUserId = UUID.randomUUID();
+  }
 
   @Test
   @DisplayName("관심사 등록 성공")
@@ -228,8 +238,8 @@ class InterestControllerTest {
   void updateInterestKeywords_fail_validation_keywordsEmpty() throws Exception {
     // given
     UUID interestId = UUID.randomUUID();
-    UUID requestUserId = UUID.randomUUID(); // 테스트에서 사용되므로 선언 및 초기화
-    InterestUpdateRequestDto requestDtoWithEmptyKeywords = new InterestUpdateRequestDto(Collections.emptyList()); // 빈 키워드 목록
+    UUID requestUserId = UUID.randomUUID();
+    InterestUpdateRequestDto requestDtoWithEmptyKeywords = new InterestUpdateRequestDto(Collections.emptyList());
 
     // when
     ResultActions resultActions = mockMvc.perform(patch(BASE_URL + "/{interestId}", interestId)
@@ -239,33 +249,29 @@ class InterestControllerTest {
         .andDo(print());
 
     resultActions
-        .andExpect(status().isBadRequest()) // HTTP 400 상태 코드 확인
-        .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT_VALUE.getCode())); // 우리가 정의한 에러 코드 확인
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT_VALUE.getCode()));
 
-    // 응답 본문을 ErrorResponse 객체로 변환하여 상세 검증
     String responseBody = resultActions.andReturn().getResponse().getContentAsString();
     ErrorResponse errorResponse = objectMapper.readValue(responseBody, ErrorResponse.class);
 
     assertThat(errorResponse.status()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE.getStatus().value());
     assertThat(errorResponse.message()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE.getMessage());
-    assertThat(errorResponse.path()).isEqualTo(BASE_URL + "/" + interestId); // 요청 경로 확인
+    assertThat(errorResponse.path()).isEqualTo(BASE_URL + "/" + interestId);
 
-    // fieldErrors 리스트에 @NotEmpty 위반 메시지가 포함되어 있는지 확인
     assertThat(errorResponse.fieldErrors())
-        .isNotEmpty() // 최소 하나 이상의 필드 에러가 있는지
-        .anySatisfy(fieldError -> { // 리스트의 요소 중 하나라도 다음 조건을 만족하는지
+        .isNotEmpty()
+        .anySatisfy(fieldError -> {
           assertThat(fieldError.field()).isEqualTo("keywords");
-          assertThat(fieldError.reason()).isEqualTo("키워드는 최소 1개 이상 등록해야 합니다."); // @NotEmpty 메시지
+          assertThat(fieldError.reason()).isEqualTo("키워드는 최소 1개 이상 등록해야 합니다.");
         });
 
-    // fieldErrors 리스트에 @Size 위반 메시지가 포함되어 있는지 확인
     assertThat(errorResponse.fieldErrors())
         .anySatisfy(fieldError -> {
           assertThat(fieldError.field()).isEqualTo("keywords");
-          assertThat(fieldError.reason()).isEqualTo("키워드는 1개이상 10개 이하로 등록 할 수 있습니다."); // @Size 메시지
+          assertThat(fieldError.reason()).isEqualTo("키워드는 1개이상 10개 이하로 등록 할 수 있습니다.");
         });
 
-    // 추가적으로, fieldErrors 리스트의 크기가 2인지 확인할 수도 있습니다 (두 제약조건 모두 위반하므로)
     assertThat(errorResponse.fieldErrors()).hasSize(2);
   }
 
@@ -288,9 +294,114 @@ class InterestControllerTest {
         .andDo(print());
 
     resultActions
-        .andExpect(status().isNotFound()) // ErrorCode.INTEREST_NOT_FOUND의 status (404 Not Found)
+        .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.code").value(ErrorCode.INTEREST_NOT_FOUND.getCode()))
         .andExpect(jsonPath("$.message").value(errorMessage))
         .andExpect(jsonPath("$.status").value(ErrorCode.INTEREST_NOT_FOUND.getStatus().value()));
+  }
+
+  @Test
+  @DisplayName("[목록조회] 관심사 목록 조회 성공 - 모든 파라미터 제공")
+  void searchInterests_success_withAllParams() throws Exception {
+    String keyword = "Java";
+    String orderBy = "name";
+    String direction = "ASC";
+    String cursor = "PreviousInterestName";
+    String after = "2024-01-01T10:00:00Z";
+    int limit = 5;
+
+    InterestDto interestDto = new InterestDto(UUID.randomUUID(), "Java World", List.of("Java", "Programming"), 100L, true);
+    CursorPageResponse<InterestDto> mockResponse = CursorPageResponse.of(
+        List.of(interestDto), "NextInterestName", "2024-01-02T10:00:00Z", 1L, true
+    );
+
+    given(interestService.searchInterests(
+        eq(keyword), eq(orderBy), eq(direction), eq(cursor), eq(after), eq(limit), eq(requestUserId)
+    )).willReturn(mockResponse);
+
+    ResultActions resultActions = mockMvc.perform(get(BASE_URL)
+            .param("keyword", keyword)
+            .param("orderBy", orderBy)
+            .param("direction", direction)
+            .param("cursor", cursor)
+            .param("after", after)
+            .param("limit", String.valueOf(limit))
+            .header("Monew-Request-User-ID", requestUserId.toString())
+            .accept(MediaType.APPLICATION_JSON))
+        .andDo(print());
+
+    resultActions
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content[0].name").value("Java World"))
+        .andExpect(jsonPath("$.hasNext").value(true))
+        .andExpect(jsonPath("$.nextCursor").value("NextInterestName"))
+        .andExpect(jsonPath("$.totalElements").value(1L));
+
+    verify(interestService).searchInterests(eq(keyword), eq(orderBy), eq(direction), eq(cursor), eq(after), eq(limit), eq(requestUserId));
+  }
+
+  @Test
+  @DisplayName("[목록조회] 관심사 목록 조회 성공 - limit 파라미터 누락 시 DTO에서 기본값(50) 사용")
+  void searchInterests_success_defaultLimit() throws Exception {
+    String orderBy = "name";
+    String direction = "DESC";
+    int expectedDefaultLimit = 50;
+
+    CursorPageResponse<InterestDto> mockResponse = CursorPageResponse.of(
+        Collections.emptyList(), null, null, 0L, false
+    );
+
+    given(interestService.searchInterests(
+        isNull(), eq(orderBy), eq(direction), isNull(), isNull(), eq(expectedDefaultLimit), eq(requestUserId)
+    )).willReturn(mockResponse);
+
+    ResultActions resultActions = mockMvc.perform(get(BASE_URL)
+            .param("orderBy", orderBy)
+            .param("direction", direction)
+            .header("Monew-Request-User-ID", requestUserId.toString())
+            .accept(MediaType.APPLICATION_JSON))
+        .andDo(print());
+
+    resultActions.andExpect(status().isOk());
+
+    verify(interestService).searchInterests(isNull(), eq(orderBy), eq(direction), isNull(), isNull(), eq(expectedDefaultLimit), eq(requestUserId));
+  }
+
+  @Test
+  @DisplayName("[목록조회] 관심사 목록 조회 실패 - 필수 파라미터(orderBy) 누락 (DTO 유효성 검사)")
+  void searchInterests_fail_validation_orderByMissing() throws Exception {
+    ResultActions resultActions = mockMvc.perform(get(BASE_URL)
+            .param("direction", "ASC")
+            .param("limit", "5")
+            .header("Monew-Request-User-ID", requestUserId.toString())
+            .accept(MediaType.APPLICATION_JSON))
+        .andDo(print());
+
+    resultActions
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT_VALUE.getCode()))
+        .andExpect(jsonPath("$.message").value(ErrorCode.INVALID_INPUT_VALUE.getMessage()))
+        .andExpect(jsonPath("$.fieldErrors").isArray())
+        .andExpect(jsonPath("$.fieldErrors[0].field").value("orderBy"))
+        .andExpect(jsonPath("$.fieldErrors[0].reason").value("정렬 기준(orderBy)은 필수입니다."));
+  }
+
+  @Test
+  @DisplayName("[목록조회] 관심사 목록 조회 실패 - limit 파라미터 최소값 미만 (DTO 유효성 검사)")
+  void searchInterests_fail_validation_limitTooSmall() throws Exception {
+    ResultActions resultActions = mockMvc.perform(get(BASE_URL)
+            .param("orderBy", "name")
+            .param("direction", "ASC")
+            .param("limit", "0")
+            .header("Monew-Request-User-ID", requestUserId.toString())
+            .accept(MediaType.APPLICATION_JSON))
+        .andDo(print());
+
+    resultActions
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT_VALUE.getCode()))
+        .andExpect(jsonPath("$.fieldErrors").isArray())
+        .andExpect(jsonPath("$.fieldErrors[0].field").value("limit"))
+        .andExpect(jsonPath("$.fieldErrors[0].reason").value("페이지 크기(limit)는 1 이상이어야 합니다.")); // DTO의 @Min 메시지
   }
 }
