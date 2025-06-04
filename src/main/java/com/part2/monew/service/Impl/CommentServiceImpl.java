@@ -123,6 +123,29 @@ public class CommentServiceImpl implements CommentService {
         commentsManagement.updateTotalCount(totalLike);
     }
 
+    @Override
+    @Transactional
+    public void deleteComment(UUID id) {
+        CommentsManagement commentsManagement = commentRepository.findById(id)
+                .orElseThrow( () ->  new NoSuchElementException("comment with id " + id + " not found"));
+
+        commentsManagement.delete();
+
+    }
+
+    @Override
+    @Transactional
+    public void hardDeleteComment(UUID id) {
+        CommentsManagement commentsManagement = commentRepository.findById(id)
+                .orElseThrow( () ->  new NoSuchElementException("comment with id " + id + " not found"));
+
+        if(commentsManagement.isActive()){
+            throw new RuntimeException("isisActive " + commentsManagement.isActive() +"는 삭제를 진행할 수 없습니다.");
+        }
+
+        commentRepository.deleteById(id);
+    }
+
     private int commentTotalLike(CommentsManagement commentsManagement) {
         return commentLikeRepository.findAllByCommentsManagement(commentsManagement).size();
     }

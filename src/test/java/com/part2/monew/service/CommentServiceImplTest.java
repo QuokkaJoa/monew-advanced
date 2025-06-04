@@ -8,6 +8,7 @@ import com.part2.monew.dto.response.CursorResponse;
 import com.part2.monew.entity.CommentsManagement;
 import com.part2.monew.entity.NewsArticle;
 import com.part2.monew.entity.User;
+import com.part2.monew.repository.CommentLikeRepository;
 import com.part2.monew.repository.CommentRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -38,6 +39,8 @@ class CommentServiceImplTest {
 
     @Autowired
     private CommentRepository commentRepository;
+    @Autowired
+    private CommentLikeRepository commentLikeRepository;
 
     @Test
     @Transactional
@@ -287,4 +290,32 @@ class CommentServiceImplTest {
                 .hasMessage("좋아요 취소를 이미 눌렀습니다.");
 
     }
+
+    @DisplayName("댓글을 삭제한다.")
+    @Test
+    @Transactional
+    void deleteComment() {
+        // given
+        User user = new User("tester", "test@example.com", "pass123", true, Timestamp.from(Instant.now()));
+        em.persist(user);
+
+        NewsArticle article = new NewsArticle("http://url.com", "제목", Timestamp.from(Instant.now()), "요약", 0L);
+        em.persist(article);
+
+        CommentsManagement comment = CommentsManagement.create(user, article, "댓글", 0);
+
+        commentRepository.save(comment);
+
+        // when
+        commentService.deleteComment(comment.getId());
+
+        // then
+        CommentsManagement updated = commentRepository.findById(comment.getId())
+                .orElseThrow(() -> new AssertionError("댓글이 DB에 존재하지 않습니다."));
+
+        assertThat(updated.isActive()).isFalse();
+    }
 }
+
+
+
