@@ -39,7 +39,7 @@ public class UserActivityServiceImpl implements UserActivityService {
 
     List<CommentLikeActivityDto> commentLikes = commentLikeRepository
         .findTop10ByUser_IdOrderByCreatedAtDesc(userId).stream()
-        .map(cl -> CommentLikeActivityDto.of(cl))
+        .map(CommentLikeActivityDto::of)
         .toList();
 
     List<NewsArticleSummaryDto> articleViews = activityDetailRepository
