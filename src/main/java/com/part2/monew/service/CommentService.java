@@ -18,4 +18,9 @@ public interface CommentService {
     CommentLikeReponse likeComment(UUID id, UUID userId);
 
     void unlikeComment(UUID id, UUID userId);
+
+    void deleteComment(UUID id);
+
+    void hardDeleteComment(UUID id);
+
 }

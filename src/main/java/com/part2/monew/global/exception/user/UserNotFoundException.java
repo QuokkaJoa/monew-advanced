@@ -8,4 +8,8 @@ public class UserNotFoundException extends BusinessException {
   public UserNotFoundException(String detailMessage) {
     super(ErrorCode.USER_NOT_FOUND, detailMessage);
   }
+
+  public UserNotFoundException() {
+    super(ErrorCode.USER_NOT_FOUND, ErrorCode.USER_NOT_FOUND.getMessage());
+  }
 }
