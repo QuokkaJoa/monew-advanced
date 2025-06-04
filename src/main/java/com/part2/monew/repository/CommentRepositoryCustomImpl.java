@@ -50,4 +50,19 @@ public class CommentRepositoryCustomImpl implements CommentRepositoryCustom {
         return after != null ? commentsManagement.createdAt.lt(after) : null;
     }
 
+    @Override
+    public List<CommentsManagement> findTop10RecentCommentsByUserId(UUID userId) {
+        return queryFactory
+            .selectFrom(commentsManagement)
+            .join(commentsManagement.user, user).fetchJoin()
+            .join(commentsManagement.newsArticle, newsArticle).fetchJoin()
+            .where(
+                commentsManagement.user.id.eq(userId),
+                commentsManagement.active.isTrue()
+            )
+            .orderBy(commentsManagement.createdAt.desc())
+            .limit(10)
+            .fetch();
+    }
+
 }
