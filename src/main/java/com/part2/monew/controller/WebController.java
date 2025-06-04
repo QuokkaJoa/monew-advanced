@@ -1,4 +1,4 @@
-package com.part2.monew;
+package com.part2.monew.controller;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
