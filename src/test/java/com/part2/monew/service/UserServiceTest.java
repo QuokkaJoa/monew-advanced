@@ -46,13 +46,13 @@ public class UserServiceTest {
         createReq = new UserCreateRequest("Woody@naver.com", "woody","123456");
         updateReq = new UserUpdateRequest("updatedWoody");
         loginReq = new UserLoginRequest("Woody@naver.com", "123456");
-        user = new User();
-        user.setId(UUID.randomUUID());
+        user = User.builder()
+                .id(UUID.randomUUID())
+                .email("woody@naver.com")
+                .username("woody")
+                .password("123456")
+                .active(true).build();
         requestUserId = user.getId();
-        user.setNickname("woody");
-        user.setPassword("123456");
-        user.setEmail("Woody@naver.com");
-        user.setActive(true);
     }
 
     @Test
