@@ -98,7 +98,7 @@ public class InterestRepositoryCustomImpl implements InterestRepositoryCustom {
       }
     }
 
-    BooleanExpression countPredicate = buildWhereClause(keywordSearchTerm, null, null, null, null); // 커서 조건 제외
+    BooleanExpression countPredicate = buildWhereClause(keywordSearchTerm, null, null, null, null);
     JPAQuery<Long> countBaseQuery = queryFactory.select(interest.countDistinct()).from(interest);
     if (keywordSearchTerm != null && !keywordSearchTerm.isEmpty()) {
       countBaseQuery.leftJoin(interest.interestKeywords, interestKeyword)
@@ -139,18 +139,17 @@ public class InterestRepositoryCustomImpl implements InterestRepositoryCustom {
       boolean isAsc = "ASC".equalsIgnoreCase(direction);
 
       if ("name".equalsIgnoreCase(orderByField)) {
-        String nameCursor = primaryCursorValue;
         if (isAsc) {
-          BooleanExpression primaryCondition = interest.name.gt(nameCursor);
+          BooleanExpression primaryCondition = interest.name.gt(primaryCursorValue);
           if (createdAtCursorValue != null) {
-            predicate = predicate.and(primaryCondition.or(interest.name.eq(nameCursor).and(interest.createdAt.gt(createdAtCursorValue))));
+            predicate = predicate.and(primaryCondition.or(interest.name.eq(primaryCursorValue).and(interest.createdAt.gt(createdAtCursorValue))));
           } else {
             predicate = predicate.and(primaryCondition);
           }
         } else {
-          BooleanExpression primaryCondition = interest.name.lt(nameCursor);
+          BooleanExpression primaryCondition = interest.name.lt(primaryCursorValue);
           if (createdAtCursorValue != null) {
-            predicate = predicate.and(primaryCondition.or(interest.name.eq(nameCursor).and(interest.createdAt.lt(createdAtCursorValue))));
+            predicate = predicate.and(primaryCondition.or(interest.name.eq(primaryCursorValue).and(interest.createdAt.lt(createdAtCursorValue))));
           } else {
             predicate = predicate.and(primaryCondition);
           }

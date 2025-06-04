@@ -1,9 +1,9 @@
-package com.part2.monew.dto.response; // 또는 com.part2.monew.dto.common 등 공통 DTO 패키지
+package com.part2.monew.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
 
-@JsonInclude(JsonInclude.Include.NON_NULL) // null인 필드는 JSON 응답에서 제외 (선택 사항)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record CursorPageResponse<T>(
     List<T> content,
     String nextCursor,
