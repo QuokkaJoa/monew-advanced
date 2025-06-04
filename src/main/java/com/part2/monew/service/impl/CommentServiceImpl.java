@@ -21,6 +21,7 @@ import com.part2.monew.repository.CommentRepository;
 import com.part2.monew.repository.NewsArticleRepository;
 import com.part2.monew.repository.UserRepository;
 import com.part2.monew.service.CommentService;
+import com.part2.monew.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +40,7 @@ public class CommentServiceImpl implements CommentService {
     private final CommentLikeRepository commentLikeRepository;
     private final UserRepository userRepository;
     private final NewsArticleRepository articleRepository;
+    private final NotificationService notificationService;
 
     @Override
     public CursorResponse findCommentsByArticleId(CommentRequest commentRequest) {
@@ -107,6 +109,17 @@ public class CommentServiceImpl implements CommentService {
         int totalLike = commentTotalLike(commentsManagement);
 
         commentsManagement.updateTotalCount(totalLike);
+
+        User commentOwner = commentsManagement.getUser();
+        if (!commentOwner.getId().equals(user.getId())) {
+            String content = (user.getUsername()+"님이 나의 댓글을 좋아합니다.");
+            notificationService.createNotification(
+                    commentOwner,
+                    content,
+                    "COMMENT",
+                    commentsManagement.getId()
+            );
+        }
 
         return CommentLikeReponse.of(commentsManagement, saveComment);
     }
