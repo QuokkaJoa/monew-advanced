@@ -17,14 +17,15 @@ public class UserRepositoryTest {
     private UserRepository userRepository;
 
     private User saved;
+    private User user;
 
     @BeforeEach
     void setUp() {
-        User user = new User();
-        user.setEmail("test@example.com");
-        user.setNickname("tester");
-        user.setPassword("123456");
-        user.setActive(true);
+        user = User.builder()
+                .username("tester")
+                .email("test@example.com")
+                .password("123456")
+                .active(true).build();
         saved = userRepository.save(user);
     }
 
@@ -56,7 +57,7 @@ public class UserRepositoryTest {
 
         // then
         assertThat(result).isPresent();
-        assertThat(result.get().getNickname()).isEqualTo("tester");
+        assertThat(result.get().getUsername()).isEqualTo("tester");
     }
 
 }

@@ -8,6 +8,11 @@ import com.part2.monew.dto.response.CursorResponse;
 import com.part2.monew.entity.CommentsManagement;
 import com.part2.monew.entity.NewsArticle;
 import com.part2.monew.entity.User;
+import com.part2.monew.repository.CommentLikeRepository;
+import com.part2.monew.global.exception.ErrorCode;
+import com.part2.monew.global.exception.comment.CommentLikeDuplication;
+import com.part2.monew.global.exception.comment.CommentUnlikeDuplication;
+import com.part2.monew.global.exception.user.UserNotFoundException;
 import com.part2.monew.repository.CommentRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -20,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,6 +42,8 @@ class CommentServiceImplTest {
 
     @Autowired
     private CommentRepository commentRepository;
+    @Autowired
+    private CommentLikeRepository commentLikeRepository;
 
     @Test
     @Transactional
@@ -132,8 +138,8 @@ class CommentServiceImplTest {
         em.clear();
         // when // then
         assertThatThrownBy(() -> commentService.create(comment))
-                .isInstanceOf(NoSuchElementException.class)
-                .hasMessage("user with id " + userFailedId + " not found");
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessage(ErrorCode.USER_NOT_FOUND.getMessage());
     }
 
     @DisplayName("댓글을 수정한다.")
@@ -230,8 +236,8 @@ class CommentServiceImplTest {
 
         // when then
         assertThatThrownBy(() -> commentService.likeComment(comment.getId(), user.getId()))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("이미 좋아요를 눌렀습니다.");
+                .isInstanceOf(CommentLikeDuplication.class)
+                .hasMessage(ErrorCode.COMMENT_LIKE_DUPLICATION.getMessage());
 
     }
 
@@ -283,8 +289,36 @@ class CommentServiceImplTest {
 
         // when then
         assertThatThrownBy(() -> commentService.unlikeComment(comment.getId(), user.getId()))
-                .isInstanceOf(NoSuchElementException.class)
-                .hasMessage("좋아요 취소를 이미 눌렀습니다.");
+                .isInstanceOf(CommentUnlikeDuplication.class)
+                .hasMessage(ErrorCode.COMMENT_UNLIKE_DUPLICATION.getMessage());
 
     }
+
+    @DisplayName("댓글을 삭제한다.")
+    @Test
+    @Transactional
+    void deleteComment() {
+        // given
+        User user = new User("tester", "test@example.com", "pass123", true, Timestamp.from(Instant.now()));
+        em.persist(user);
+
+        NewsArticle article = new NewsArticle("http://url.com", "제목", Timestamp.from(Instant.now()), "요약", 0L);
+        em.persist(article);
+
+        CommentsManagement comment = CommentsManagement.create(user, article, "댓글", 0);
+
+        commentRepository.save(comment);
+
+        // when
+        commentService.deleteComment(comment.getId());
+
+        // then
+        CommentsManagement updated = commentRepository.findById(comment.getId())
+                .orElseThrow(() -> new AssertionError("댓글이 DB에 존재하지 않습니다."));
+
+        assertThat(updated.isActive()).isFalse();
+    }
 }
+
+
+

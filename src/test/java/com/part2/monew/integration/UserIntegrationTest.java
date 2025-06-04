@@ -53,7 +53,7 @@ public class UserIntegrationTest {
 
         User saved = userRepository.findByEmailAndActiveTrue("test@naver.com").orElse(null);
         assertThat(saved).isNotNull();
-        assertThat(saved.getNickname()).isEqualTo("tester");
+        assertThat(saved.getUsername()).isEqualTo("tester");
     }
 
     @Test

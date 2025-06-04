@@ -10,6 +10,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -45,6 +46,9 @@ public class CommentsManagement {
 
     @Column(nullable = false)
     private boolean active = true;
+
+    @OneToMany(mappedBy = "commentsManagement", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CommentLike> commentLikes;
 
 
     @Builder
@@ -84,4 +88,9 @@ public class CommentsManagement {
     public void updateTotalCount(int likeCount) {
         this.likeCount = likeCount;
     }
+
+    public void delete() {
+        this.active = false;
+    }
+
 }

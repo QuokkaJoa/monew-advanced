@@ -63,4 +63,21 @@ public class CommentController {
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
+    @DeleteMapping("/{commentId}")
+    public ResponseEntity<Void> deleteComment(
+            @PathVariable("commentId") UUID commentId
+    ){
+        commentService.deleteComment(commentId);
+
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @DeleteMapping("/{commentId}/hard")
+    public ResponseEntity<Void> hardDeleteComment(
+            @PathVariable("commentId") UUID commentId
+    ){
+        commentService.hardDeleteComment(commentId);
+
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
 }

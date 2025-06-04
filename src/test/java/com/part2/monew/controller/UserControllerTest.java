@@ -7,7 +7,7 @@ import com.part2.monew.dto.request.UserUpdateRequest;
 import com.part2.monew.dto.response.UserResponse;
 import com.part2.monew.entity.User;
 import com.part2.monew.mapper.UserMapper;
-import com.part2.monew.service.impl.UserServiceImpl;
+import com.part2.monew.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +33,7 @@ class UserControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private UserServiceImpl userServiceImpl;
+    private UserService userService;
 
     @MockitoBean
     private UserMapper userMapper;
@@ -54,10 +54,10 @@ class UserControllerTest {
         createReq = new UserCreateRequest("woody@naver.com", "woody", "123456");
         loginReq = new UserLoginRequest("woody@naver.com", "123456");
         updateReq = new UserUpdateRequest("updatedWoody");
-        user = new User();
-        user.setId(userId);
-        user.setEmail("woody@naver.com");
-        user.setNickname("woody");
+        user = User.builder()
+                .id(userId)
+                .email("woody@naver.com")
+                .username("woody").build();
         userResponse = new UserResponse(
                 userId,
                 "woody@naver.com",
@@ -69,7 +69,7 @@ class UserControllerTest {
     @Test
     void createUser() throws Exception {
         // given
-        given(userServiceImpl.createUser(any(UserCreateRequest.class)))
+        given(userService.createUser(any(UserCreateRequest.class)))
                 .willReturn(userResponse);
 
         // when & then
@@ -85,7 +85,7 @@ class UserControllerTest {
     @Test
     void loginUser() throws Exception {
         // given
-        given(userServiceImpl.loginUser(any(UserLoginRequest.class)))
+        given(userService.loginUser(any(UserLoginRequest.class)))
                 .willReturn(user);
         given(userMapper.toResponse(any(User.class)))
                 .willReturn(userResponse);
@@ -110,7 +110,7 @@ class UserControllerTest {
                 "updatedWoody",
                 Timestamp.from(Instant.now())
         );
-        given(userServiceImpl.updateNickname(any(UUID.class), any(UUID.class), any(UserUpdateRequest.class)))
+        given(userService.updateNickname(any(UUID.class), any(UUID.class), any(UserUpdateRequest.class)))
                 .willReturn(updatedUserResponse);
 
         // when & then
@@ -125,7 +125,7 @@ class UserControllerTest {
     @Test
     void deleteUser() throws Exception {
         // given
-        doNothing().when(userServiceImpl).delete(any(UUID.class), any(UUID.class));
+        doNothing().when(userService).delete(any(UUID.class), any(UUID.class));
 
         // when & then
         mockMvc.perform(delete("/api/users/" + userId)
@@ -136,7 +136,7 @@ class UserControllerTest {
     @Test
     void deleteUserHard() throws Exception {
         // given
-        doNothing().when(userServiceImpl).deleteHard(any(UUID.class), any(UUID.class));
+        doNothing().when(userService).deleteHard(any(UUID.class), any(UUID.class));
 
         // when & then
         mockMvc.perform(delete("/api/users/" + userId + "/hard")

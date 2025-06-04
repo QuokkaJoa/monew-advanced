@@ -3,6 +3,7 @@ package com.part2.monew.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
@@ -13,7 +14,10 @@ import java.util.UUID;
 @NoArgsConstructor
 @Entity
 @Getter
-@Table(name = "users_subscribers")
+@Setter
+@Table(name = "users_subscribers", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"users_id", "interests_id"})
+})
 public class UserSubscriber {
     @Id
     @UuidGenerator

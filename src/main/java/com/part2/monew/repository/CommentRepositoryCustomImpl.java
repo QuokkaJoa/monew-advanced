@@ -42,7 +42,7 @@ public class CommentRepositoryCustomImpl implements CommentRepositoryCustom {
                 .selectFrom(commentsManagement)
                 .where(
                         commentsManagement.newsArticle.id.eq(articleId),
-                        commentsManagement.active.eq(true)
+                        commentsManagement.active.isTrue()
                 ).fetchCount();
     }
 
