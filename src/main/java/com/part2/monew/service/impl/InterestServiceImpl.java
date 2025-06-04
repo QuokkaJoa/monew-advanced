@@ -2,6 +2,7 @@ package com.part2.monew.service.impl;
 
 import com.part2.monew.dto.request.InterestRegisterRequestDto;
 import com.part2.monew.dto.request.InterestUpdateRequestDto;
+import com.part2.monew.dto.response.CursorPageResponse;
 import com.part2.monew.dto.response.InterestDto;
 import com.part2.monew.entity.Interest;
 import com.part2.monew.entity.InterestKeyword;
@@ -14,6 +15,7 @@ import com.part2.monew.repository.InterestRepository;
 import com.part2.monew.repository.KeywordRepository;
 import com.part2.monew.service.InterestService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.similarity.JaroWinklerSimilarity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +25,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class InterestServiceImpl implements InterestService {
   private final InterestRepository interestRepository;
@@ -113,4 +116,33 @@ public class InterestServiceImpl implements InterestService {
     return interestMapper.toDto(updatedInterest, subscribedByMe);
   }
 
+  @Transactional(readOnly = true)
+  @Override
+  public CursorPageResponse<InterestDto> searchInterests(
+      String keyword, String orderBy, String direction,
+      String cursor, String after, int limit, UUID requestUserId) {
+
+    if (!("name".equalsIgnoreCase(orderBy) || "subscriberCount".equalsIgnoreCase(orderBy))) {
+      log.warn("Invalid orderBy parameter: {}", orderBy);
+      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "정렬 기준(orderBy)은 'name' 또는 'subscriberCount'만 가능합니다.");
+    }
+    if (!("ASC".equalsIgnoreCase(direction) || "DESC".equalsIgnoreCase(direction))) {
+      log.warn("Invalid direction parameter: {}", direction);
+      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "정렬 방향(direction)은 'ASC' 또는 'DESC'만 가능합니다.");
+    }
+    if (limit < 1 || limit > 50) {
+      log.warn("Invalid limit parameter: {}", limit);
+      throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "페이지 크기(limit)는 1에서 50 사이여야 합니다.");
+    }
+
+    return interestRepository.searchInterestsWithQueryDsl(
+        keyword,
+        orderBy,
+        direction,
+        cursor,
+        after,
+        limit,
+        requestUserId
+    );
+  }
 }
