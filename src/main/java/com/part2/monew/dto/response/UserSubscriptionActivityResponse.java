@@ -2,6 +2,7 @@ package com.part2.monew.dto.response;
 
 import com.part2.monew.entity.Interest;
 import com.part2.monew.entity.InterestKeyword;
+import com.part2.monew.entity.Keyword;
 import com.part2.monew.entity.UserSubscriber;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,7 +14,7 @@ import java.util.stream.Collectors;
 
 @Getter
 @Builder
-public class UserSubscriberResponse {
+public class UserSubscriptionActivityResponse {
 
   private UUID id;
   private UUID interestId;
@@ -22,14 +23,14 @@ public class UserSubscriberResponse {
   private Long interestSubscriberCount;
   private Timestamp createdAt;
 
-  public static UserSubscriberResponse of(UserSubscriber subscriber) {
+  public static UserSubscriptionActivityResponse of(UserSubscriber subscriber) {
     Interest interest = subscriber.getInterest();
     List<String> keywordNames = interest.getInterestKeywords().stream()
         .map(InterestKeyword::getKeyword)
-        .map(k -> k.getName())
+        .map(Keyword::getName)
         .collect(Collectors.toList());
 
-    return UserSubscriberResponse.builder()
+    return UserSubscriptionActivityResponse.builder()
         .id(subscriber.getId())
         .interestId(interest.getId())
         .interestName(interest.getName())
