@@ -24,6 +24,7 @@ public enum ErrorCode {
   INTEREST_NAME_ALREADY_EXISTS(HttpStatus.CONFLICT, "I001", "이미 존재하는 관심사 이름입니다."),
   SIMILAR_INTEREST_EXISTS(HttpStatus.CONFLICT, "I002", "매우 유사한 이름의 관심사가 이미 존재합니다. 다른 이름을 사용해주세요."),
   INTEREST_NOT_FOUND(HttpStatus.NOT_FOUND, "I003", "해당 관심사를 찾을 수 없습니다."),
+  ALREADY_SUBSCRIBED_INTEREST(HttpStatus.CONFLICT, "I004", "이미 구독한 관심사입니다."),
 
   // Keyword Errors (Kxxx)
   KEYWORD_NOT_FOUND(HttpStatus.NOT_FOUND, "K001", "해당 키워드를 찾을 수 없습니다."),
