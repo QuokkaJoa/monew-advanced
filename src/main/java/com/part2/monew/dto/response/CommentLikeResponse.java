@@ -53,7 +53,7 @@ public class CommentLikeResponse {
                 .commentId(commentLike.getCommentsManagement().getId())
                 .articleId(commentsManagement.getNewsArticle().getId())
                 .commentUserId(commentsManagement.getUser().getId())
-                .commentUserNickname(commentsManagement.getUser().getUsername())
+                .commentUserNickname(commentsManagement.getUser().getNickname())
                 .content(commentsManagement.getContent())
                 .likeCount(commentsManagement.getLikeCount())
                 .commentCreatedAt(commentsManagement.getCreatedAt())

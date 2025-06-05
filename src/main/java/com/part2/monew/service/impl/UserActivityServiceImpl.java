@@ -50,7 +50,7 @@ public class UserActivityServiceImpl implements UserActivityService {
     return UserActivityResponse.builder()
         .id(user.getId())
         .email(user.getEmail())
-        .nickname(user.getUsername())
+        .nickname(user.getNickname())
         .createdAt(user.getCreatedAt())
         .subscriptions(subscriptions)
         .comments(comments)

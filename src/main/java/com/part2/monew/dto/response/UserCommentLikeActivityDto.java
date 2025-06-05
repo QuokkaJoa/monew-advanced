@@ -32,7 +32,7 @@ public class UserCommentLikeActivityDto {
         .articleId(comment.getNewsArticle().getId())
         .articleTitle(comment.getNewsArticle().getTitle())
         .commentUserId(comment.getUser().getId())
-        .commentUserNickname(comment.getUser().getUsername())
+        .commentUserNickname(comment.getUser().getNickname())
         .commentContent(comment.getContent())
         .commentLikeCount(comment.getLikeCount())
         .commentCreatedAt(comment.getCreatedAt())

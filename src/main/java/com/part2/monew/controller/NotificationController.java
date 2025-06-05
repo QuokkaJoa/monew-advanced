@@ -1,5 +1,8 @@
 package com.part2.monew.controller;
 
+import com.part2.monew.dto.request.NotificationCursorRequest;
+import com.part2.monew.dto.response.CursorPageResponse;
+import com.part2.monew.dto.response.NotificationResponse;
 import com.part2.monew.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +30,16 @@ public class NotificationController {
             notificationService.updated(notificationId, userId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("")
+    public ResponseEntity<CursorPageResponse<NotificationResponse>> info_Notification(
+            @ModelAttribute NotificationCursorRequest request,
+            @RequestHeader("MoNew-Request-User-ID") UUID userId
+            ){
+
+        CursorPageResponse<NotificationResponse> result = notificationService.getNoConfirmedNotifications(userId, request);
+        return ResponseEntity.ok(result);
     }
 
 }

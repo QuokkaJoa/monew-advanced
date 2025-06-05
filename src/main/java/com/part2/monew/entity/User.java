@@ -23,8 +23,7 @@ public class User {
     @Column(name = "user_id")
     private UUID id;
 
-    @Column(name = "nickname")
-    private String username;
+    private String nickname;
 
     @Column(nullable = false, unique = true, length = 50)
     private String email;
@@ -59,7 +58,7 @@ public class User {
     private List<Notification> notification;
 
     public User(String username, String email, String password, boolean active, Timestamp createdAt) {
-        this.username = username;
+        this.nickname = username;
         this.email = email;
         this.password = password;
         this.active = active;

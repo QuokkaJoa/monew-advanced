@@ -112,7 +112,7 @@ public class CommentServiceImpl implements CommentService {
 
         User commentOwner = commentsManagement.getUser();
         if (!commentOwner.getId().equals(user.getId())) {
-            String content = (user.getUsername()+"님이 나의 댓글을 좋아합니다.");
+            String content = (user.getNickname()+"님이 나의 댓글을 좋아합니다.");
             notificationService.createNotification(
                     commentOwner,
                     content,
