@@ -15,6 +15,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -53,6 +55,8 @@ public class UserServiceTest {
                 .password("123456")
                 .active(true).build();
         requestUserId = user.getId();
+        response = new UserResponse(user.getId(),"woody@naver.com","updatedWoody", Timestamp.from(Instant.now()));
+
     }
 
     @Test
@@ -91,7 +95,7 @@ public class UserServiceTest {
         UserResponse result = userService.updateNickname(user.getId(),requestUserId,updateReq);
 
         // then
-        assertThat(result.nickname()).isEqualTo(updateReq.getNickname());
+        assertThat(result.username()).isEqualTo(updateReq.getUsername());
     }
 
     @Test
