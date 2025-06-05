@@ -15,5 +15,5 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
 
     @Modifying
     @Query("DELETE FROM Notification n WHERE n.confirmed = true AND n.updatedAt < :oneWeekAgo")
-    int deleteConfirmedNotificationsBefore(@Param("oneWeekAgo") Timestamp oneWeekAgo);
+    void deleteConfirmedNotificationsBefore(@Param("oneWeekAgo") Timestamp oneWeekAgo);
 }
