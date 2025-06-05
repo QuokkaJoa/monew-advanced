@@ -48,7 +48,7 @@ public class UserIntegrationTest {
                         .content(objectMapper.writeValueAsString(createReq)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("test@naver.com"))
-                .andExpect(jsonPath("$.nickname").value("tester"))
+                .andExpect(jsonPath("$.username").value("tester"))
                 .andExpect(jsonPath("$.createdAt").exists());
 
         User saved = userRepository.findByEmailAndActiveTrue("test@naver.com").orElse(null);
@@ -89,7 +89,7 @@ public class UserIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateReq)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nickname").value("updatedNick"));
+                .andExpect(jsonPath("$.username").value("updatedNick"));
     }
 
     @Test
