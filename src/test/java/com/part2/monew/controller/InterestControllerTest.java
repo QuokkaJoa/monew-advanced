@@ -9,7 +9,7 @@ import com.part2.monew.global.exception.BusinessException;
 import com.part2.monew.global.exception.ErrorCode;
 import com.part2.monew.global.exception.ErrorResponse;
 import com.part2.monew.global.exception.GlobalExceptionHandler;
-import com.part2.monew.global.exception.SimilarInterestExistsException;
+import com.part2.monew.global.exception.interest.SimilarInterestExistsException;
 import com.part2.monew.service.InterestService;
 import java.util.Arrays;
 import java.util.Collections;

@@ -4,6 +4,7 @@ import com.part2.monew.dto.request.InterestRegisterRequestDto;
 import com.part2.monew.dto.request.InterestUpdateRequestDto;
 import com.part2.monew.dto.response.CursorPageResponse;
 import com.part2.monew.dto.response.InterestDto;
+import com.part2.monew.dto.response.SubscriptionResponse;
 import jakarta.persistence.criteria.CriteriaBuilder.In;
 import java.util.UUID;
 
@@ -15,4 +16,6 @@ public interface InterestService {
 
   CursorPageResponse<InterestDto> searchInterests(String keyword, String orderBy, String direction,
       String cursor, String after, int limit, UUID requestUserId);
+
+  SubscriptionResponse subscribeToInterest(UUID interestId, UUID requestUserId);
 }

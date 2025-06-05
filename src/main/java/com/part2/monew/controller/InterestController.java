@@ -5,6 +5,7 @@ import com.part2.monew.dto.request.InterestSearchRequest;
 import com.part2.monew.dto.request.InterestUpdateRequestDto;
 import com.part2.monew.dto.response.CursorPageResponse;
 import com.part2.monew.dto.response.InterestDto;
+import com.part2.monew.dto.response.SubscriptionResponse;
 import com.part2.monew.service.InterestService;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -60,6 +61,14 @@ public class InterestController {
         requestUserId
     );
     return ResponseEntity.ok(response);
+  }
+
+  @PostMapping("/{interestId}/subscription")
+  public ResponseEntity<SubscriptionResponse> subscribeToInterest(@PathVariable UUID interestId,
+      @RequestHeader(value = "Monew-Request-User-Id", required = false) UUID requestUserId) {
+    SubscriptionResponse subscriptionResponse = interestService.subscribeToInterest(interestId,
+        requestUserId);
+    return ResponseEntity.ok(subscriptionResponse);
   }
 
 }
