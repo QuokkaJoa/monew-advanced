@@ -23,7 +23,7 @@ public class ActivityDetail {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "users_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -39,7 +39,7 @@ public class ActivityDetail {
     private CommentLike likedComment;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "news_articles_id")
+    @JoinColumn(name = "news_article_id")
     private NewsArticle newsArticle;
 
     @Column(name = "views_at")

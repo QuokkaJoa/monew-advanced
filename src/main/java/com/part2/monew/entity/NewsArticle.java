@@ -19,7 +19,7 @@ public class NewsArticle {
 
     @Id
     @GeneratedValue(generator = "UUID")
-    @Column(name = "news_articles_id", updatable = false, nullable = false, columnDefinition = "UUID")
+    @Column(name = "news_article_id", updatable = false, nullable = false, columnDefinition = "UUID")
     private UUID id;
 
     @Column(name = "source_url", nullable = false, length = 2048)
@@ -35,7 +35,7 @@ public class NewsArticle {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String summary;
 
-    @Column(name = "view_count", columnDefinition = "BIGINT DEFAULT 0")
+    @Column(name = "view_counts", columnDefinition = "BIGINT DEFAULT 0")
     private Long viewCount = 0L;
 
     @CreationTimestamp

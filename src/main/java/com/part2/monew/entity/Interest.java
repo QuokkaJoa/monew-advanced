@@ -27,7 +27,7 @@ public class Interest {
     @Column(name = "name", nullable = false, length = 100, unique = true)
     private String name;
 
-    @Column(name = "subscriber_count", nullable = false)
+    @Column(name = "subscriber_counts", nullable = false)
     @ColumnDefault("0")
     private Integer subscriberCount = 0;
 
