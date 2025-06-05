@@ -61,7 +61,7 @@ public class UserServiceImpl implements UserService {
             throw new NoPermissionToUpdateException();
         }
 
-        user.setUsername(request.getUsername());
+        user.setUsername(request.getNickname());
         userRepository.save(user);
         return userMapper.toResponse(user);
     }
