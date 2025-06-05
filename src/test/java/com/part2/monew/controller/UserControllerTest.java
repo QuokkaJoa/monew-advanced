@@ -78,7 +78,7 @@ class UserControllerTest {
                         .content(objectMapper.writeValueAsString(createReq)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("woody@naver.com"))
-                .andExpect(jsonPath("$.nickname").value("woody"))
+                .andExpect(jsonPath("$.username").value("woody"))
                 .andExpect(jsonPath("$.createdAt").exists());
     }
 
@@ -97,7 +97,7 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("MoNew-Request-User-ID", userId.toString()))
                 .andExpect(jsonPath("$.email").value("woody@naver.com"))
-                .andExpect(jsonPath("$.nickname").value("woody"))
+                .andExpect(jsonPath("$.username").value("woody"))
                 .andExpect(jsonPath("$.createdAt").exists());
     }
 
@@ -119,7 +119,7 @@ class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateReq)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nickname").value("updatedWoody"));
+                .andExpect(jsonPath("$.username").value("updatedWoody"));
     }
 
     @Test

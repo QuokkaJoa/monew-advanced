@@ -15,4 +15,6 @@ public interface InterestService {
 
   CursorPageResponse<InterestDto> searchInterests(String keyword, String orderBy, String direction,
       String cursor, String after, int limit, UUID requestUserId);
+
+  void deleteInterest(UUID interestId, UUID requestUserId);
 }

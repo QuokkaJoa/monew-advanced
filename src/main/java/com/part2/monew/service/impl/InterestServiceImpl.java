@@ -9,7 +9,7 @@ import com.part2.monew.entity.InterestKeyword;
 import com.part2.monew.entity.Keyword;
 import com.part2.monew.global.exception.BusinessException;
 import com.part2.monew.global.exception.ErrorCode;
-import com.part2.monew.global.exception.SimilarInterestExistsException;
+import com.part2.monew.global.exception.interest.SimilarInterestExistsException;
 import com.part2.monew.mapper.InterestMapper;
 import com.part2.monew.repository.InterestRepository;
 import com.part2.monew.repository.KeywordRepository;
@@ -104,10 +104,10 @@ public class InterestServiceImpl implements InterestService {
     interestToUpdate.getInterestKeywords().clear();
 
     for (Keyword keywordEntity : newKeywordEntities) {
-      InterestKeyword newInterestKeyword = new InterestKeyword(); // InterestKeyword 엔티티에 기본 생성자 및 setter 가정
+      InterestKeyword newInterestKeyword = new InterestKeyword();
       newInterestKeyword.setInterest(interestToUpdate);
       newInterestKeyword.setKeyword(keywordEntity);
-      interestToUpdate.getInterestKeywords().add(newInterestKeyword); // Interest의 컬렉션에 추가
+      interestToUpdate.getInterestKeywords().add(newInterestKeyword);
     }
 
     Interest updatedInterest = interestRepository.save(interestToUpdate);
@@ -144,5 +144,19 @@ public class InterestServiceImpl implements InterestService {
         limit,
         requestUserId
     );
+  }
+
+  @Transactional
+  @Override
+  public void deleteInterest(UUID interestId, UUID requestUserId) {
+    Interest interestToDelete = interestRepository.findById(interestId)
+        .orElseThrow(() -> new BusinessException(ErrorCode.INTEREST_NOT_FOUND,
+            String.format("삭제할 관심사를 찾을 수 없습니다. ID: %s", interestId)));
+
+    log.info("관심사 삭제 요청 - ID: {}, 요청자 ID: {}", interestId, requestUserId);
+
+    interestRepository.delete(interestToDelete);
+
+    log.info("관심사 삭제 완료 - ID: {}", interestId);
   }
 }
