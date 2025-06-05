@@ -19,6 +19,7 @@ public interface UserMapper {
     @Mapping(target = "active", constant = "true")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "username", source = "nickname")
     User toEntity(UserCreateRequest request);
 
     @Mapping(target = "createdAt", expression = "java(user.getCreatedAt())")
