@@ -8,7 +8,7 @@ import com.part2.monew.entity.InterestKeyword;
 import com.part2.monew.entity.Keyword;
 import com.part2.monew.global.exception.BusinessException;
 import com.part2.monew.global.exception.ErrorCode;
-import com.part2.monew.global.exception.SimilarInterestExistsException;
+import com.part2.monew.global.exception.interest.SimilarInterestExistsException;
 import com.part2.monew.mapper.InterestMapper;
 import com.part2.monew.repository.InterestRepository;
 import com.part2.monew.repository.KeywordRepository;
