@@ -22,7 +22,7 @@ public class UserRepositoryTest {
     @BeforeEach
     void setUp() {
         user = User.builder()
-                .username("tester")
+                .nickname("tester")
                 .email("test@example.com")
                 .password("123456")
                 .active(true).build();
@@ -57,7 +57,7 @@ public class UserRepositoryTest {
 
         // then
         assertThat(result).isPresent();
-        assertThat(result.get().getUsername()).isEqualTo("tester");
+        assertThat(result.get().getNickname()).isEqualTo("tester");
     }
 
 }
