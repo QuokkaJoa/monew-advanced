@@ -31,7 +31,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -402,6 +405,47 @@ class InterestControllerTest {
         .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT_VALUE.getCode()))
         .andExpect(jsonPath("$.fieldErrors").isArray())
         .andExpect(jsonPath("$.fieldErrors[0].field").value("limit"))
-        .andExpect(jsonPath("$.fieldErrors[0].reason").value("페이지 크기(limit)는 1 이상이어야 합니다.")); // DTO의 @Min 메시지
+        .andExpect(jsonPath("$.fieldErrors[0].reason").value("페이지 크기(limit)는 1 이상이어야 합니다."));
+  }
+
+  @Test
+  @DisplayName("[삭제] 관심사 삭제 성공")
+  void deleteInterest_success() throws Exception {
+    UUID interestIdToDelete = UUID.randomUUID();
+
+    doNothing().when(interestService).deleteInterest(eq(interestIdToDelete), eq(requestUserId));
+
+    ResultActions resultActions = mockMvc.perform(delete(BASE_URL + "/{interestId}", interestIdToDelete)
+            .header("Monew-Request-User-ID", requestUserId.toString())
+            .accept(MediaType.APPLICATION_JSON))
+        .andDo(print());
+
+    resultActions
+        .andExpect(status().isNoContent());
+
+    verify(interestService).deleteInterest(eq(interestIdToDelete), eq(requestUserId));
+  }
+
+  @Test
+  @DisplayName("[삭제] 관심사 삭제 실패 - 존재하지 않는 관심사 ID")
+  void deleteInterest_fail_interestNotFound() throws Exception {
+    UUID nonExistentInterestId = UUID.randomUUID();
+    String errorMessage = String.format("삭제할 관심사를 찾을 수 없습니다. ID: %s", nonExistentInterestId);
+
+    doThrow(new BusinessException(ErrorCode.INTEREST_NOT_FOUND, errorMessage))
+        .when(interestService).deleteInterest(eq(nonExistentInterestId), eq(requestUserId));
+
+    ResultActions resultActions = mockMvc.perform(delete(BASE_URL + "/{interestId}", nonExistentInterestId)
+            .header("Monew-Request-User-ID", requestUserId.toString())
+            .accept(MediaType.APPLICATION_JSON))
+        .andDo(print());
+
+    resultActions
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.code").value(ErrorCode.INTEREST_NOT_FOUND.getCode()))
+        .andExpect(jsonPath("$.message").value(errorMessage))
+        .andExpect(jsonPath("$.status").value(ErrorCode.INTEREST_NOT_FOUND.getStatus().value()));
+
+    verify(interestService).deleteInterest(eq(nonExistentInterestId), eq(requestUserId));
   }
 }

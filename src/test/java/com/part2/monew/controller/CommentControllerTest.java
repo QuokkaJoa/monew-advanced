@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.part2.monew.dto.request.CommentRequest;
 import com.part2.monew.dto.request.CreateCommentRequest;
 import com.part2.monew.dto.request.UpdateCommentRequest;
-import com.part2.monew.dto.response.CommentLikeReponse;
+import com.part2.monew.dto.response.CommentLikeResponse;
 import com.part2.monew.dto.response.CommentResponse;
 import com.part2.monew.service.CommentService;
 import org.junit.jupiter.api.DisplayName;
@@ -123,7 +123,7 @@ class CommentControllerTest {
         UUID commentId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
 
-        CommentLikeReponse fakeResponse = CommentLikeReponse.builder()
+        CommentLikeResponse fakeResponse = CommentLikeResponse.builder()
                 .id(UUID.randomUUID())                       // 좋아요 엔티티 ID
                 .likeBy(userId)                              // 좋아요 누른 사용자 ID
                 .createdAt(Timestamp.from(Instant.now()))    // 좋아요 생성된 시각

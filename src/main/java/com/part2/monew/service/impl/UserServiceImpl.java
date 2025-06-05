@@ -14,6 +14,7 @@ import com.part2.monew.repository.UserRepository;
 import com.part2.monew.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -23,9 +24,11 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
 
+    @Transactional
+    @Override
     public UserResponse createUser(UserCreateRequest request){
         if(userRepository.existsByEmail(request.email())){
-            throw new EmailDuplicateException("이미 사용 중인 이메일입니다.");
+            throw new EmailDuplicateException();
         }
 
         User user = userMapper.toEntity(request);
@@ -33,6 +36,8 @@ public class UserServiceImpl implements UserService {
         return userMapper.toResponse(user);
     }
 
+    @Transactional
+    @Override
     public User loginUser(UserLoginRequest request){
         String email = request.email();
         String password = request.password();
@@ -46,37 +51,43 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
+    @Transactional
+    @Override
     public UserResponse updateNickname(UUID userId, UUID requestUserId, UserUpdateRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("해당 사용자를 찾을 수 없습니다."));
+                .orElseThrow(UserNotFoundException::new);
 
         if (!user.getId().equals(requestUserId)){
-            throw new NoPermissionToUpdateException("사용자 수정 권한이 없습니다.");
+            throw new NoPermissionToUpdateException();
         }
 
-        user.setUsername(request.getUsername());
+        user.setUsername(request.getNickname());
         userRepository.save(user);
         return userMapper.toResponse(user);
     }
 
+    @Transactional
+    @Override
     public void delete(UUID userId, UUID requestUserId) {
         User user = userRepository.findByIdAndActiveTrue(userId)
-                .orElseThrow(() -> new UserNotFoundException("해당 사용자를 찾을 수 없습니다."));
+                .orElseThrow(UserNotFoundException::new);
 
         if (!user.getId().equals(requestUserId)){
-            throw new NoPermissionToDeleteException("사용자 삭제 권한이 없습니다.");
+            throw new NoPermissionToDeleteException();
         }
 
         user.setActive(false);
         userRepository.save(user);
     }
 
+    @Transactional
+    @Override
     public void deleteHard(UUID userId, UUID requestUserId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("해당 사용자를 찾을 수 없습니다."));
+                .orElseThrow(UserNotFoundException::new);
 
         if (!user.getId().equals(requestUserId)){
-            throw new NoPermissionToDeleteException("사용자 삭제 권한이 없습니다.");
+            throw new NoPermissionToDeleteException();
         }
 
         userRepository.delete(user);
