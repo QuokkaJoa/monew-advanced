@@ -27,22 +27,22 @@ public class ActivityDetail {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "interest_id", nullable = true)
+    @JoinColumn(name = "interest_id")
     private Interest interest;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "comment_id", nullable = true)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "comment_id")
     private CommentsManagement comment;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "liked_comment_id", nullable = true)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "liked_comment_id")
     private CommentLike likedComment;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "news_articles_id", nullable = true)
+    @JoinColumn(name = "news_articles_id")
     private NewsArticle newsArticle;
 
-    @Column(name = "views_at", nullable = true)
+    @Column(name = "views_at")
     private Timestamp viewedAt;
 
     @CreationTimestamp
