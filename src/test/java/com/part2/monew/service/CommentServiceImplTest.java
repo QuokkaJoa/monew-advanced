@@ -211,7 +211,7 @@ class CommentServiceImplTest {
                         comment.getId(),
                         article.getId(),
                         comment.getUser().getId(),
-                        comment.getUser().getUsername(),
+                        comment.getUser().getNickname(),
                         comment.getContent(),
                         1,
                         comment.getCreatedAt());

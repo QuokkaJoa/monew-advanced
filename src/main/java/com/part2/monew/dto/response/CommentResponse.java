@@ -36,7 +36,7 @@ public class CommentResponse {
                 .id(comment.getId())
                 .articleId(comment.getNewsArticle().getId())
                 .userId(comment.getUser().getId())
-                .userNickname(comment.getUser().getUsername())
+                .userNickname(comment.getUser().getNickname())
                 .content(comment.getContent())
                 .likeCount(comment.getLikeCount())
                 .likedByMe( comment.getLikeCount() > 0)

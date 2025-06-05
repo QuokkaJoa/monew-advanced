@@ -51,7 +51,7 @@ public class UserServiceTest {
         user = User.builder()
                 .id(UUID.randomUUID())
                 .email("woody@naver.com")
-                .username("woody")
+                .nickname("woody")
                 .password("123456")
                 .active(true).build();
         requestUserId = user.getId();
@@ -95,7 +95,7 @@ public class UserServiceTest {
         UserResponse result = userService.updateNickname(user.getId(),requestUserId,updateReq);
 
         // then
-        assertThat(result.username()).isEqualTo(updateReq.getUsername());
+        assertThat(result.nickname()).isEqualTo(updateReq.getNickname());
     }
 
     @Test

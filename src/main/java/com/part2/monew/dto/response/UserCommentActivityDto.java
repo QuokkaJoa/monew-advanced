@@ -27,7 +27,7 @@ public class UserCommentActivityDto {
         .articleId(article.getId())
         .articleTitle(article.getTitle())
         .userId(comment.getUser().getId())
-        .userNickname(comment.getUser().getUsername())
+        .userNickname(comment.getUser().getNickname())
         .content(comment.getContent())
         .likeCount(comment.getLikeCount())
         .createdAt(comment.getCreatedAt())
