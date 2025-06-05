@@ -19,4 +19,6 @@ public interface InterestService {
   void deleteInterest(UUID interestId, UUID requestUserId);
 
   SubscriptionResponse subscribeToInterest(UUID interestId, UUID requestUserId);
+
+  void unsubscribeFromInterest(UUID interestId, UUID requestUserId);
 }
