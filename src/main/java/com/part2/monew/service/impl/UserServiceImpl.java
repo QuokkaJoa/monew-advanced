@@ -25,7 +25,7 @@ public class UserServiceImpl implements UserService {
 
     public UserResponse createUser(UserCreateRequest request){
         if(userRepository.existsByEmail(request.email())){
-            throw new EmailDuplicateException("이미 사용 중인 이메일입니다.");
+            throw new EmailDuplicateException();
         }
 
         User user = userMapper.toEntity(request);
@@ -48,10 +48,10 @@ public class UserServiceImpl implements UserService {
 
     public UserResponse updateNickname(UUID userId, UUID requestUserId, UserUpdateRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("해당 사용자를 찾을 수 없습니다."));
+                .orElseThrow(UserNotFoundException::new);
 
         if (!user.getId().equals(requestUserId)){
-            throw new NoPermissionToUpdateException("사용자 수정 권한이 없습니다.");
+            throw new NoPermissionToUpdateException();
         }
 
         user.setUsername(request.getUsername());
@@ -61,10 +61,10 @@ public class UserServiceImpl implements UserService {
 
     public void delete(UUID userId, UUID requestUserId) {
         User user = userRepository.findByIdAndActiveTrue(userId)
-                .orElseThrow(() -> new UserNotFoundException("해당 사용자를 찾을 수 없습니다."));
+                .orElseThrow(UserNotFoundException::new);
 
         if (!user.getId().equals(requestUserId)){
-            throw new NoPermissionToDeleteException("사용자 삭제 권한이 없습니다.");
+            throw new NoPermissionToDeleteException();
         }
 
         user.setActive(false);
@@ -73,10 +73,10 @@ public class UserServiceImpl implements UserService {
 
     public void deleteHard(UUID userId, UUID requestUserId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("해당 사용자를 찾을 수 없습니다."));
+                .orElseThrow(UserNotFoundException::new);
 
         if (!user.getId().equals(requestUserId)){
-            throw new NoPermissionToDeleteException("사용자 삭제 권한이 없습니다.");
+            throw new NoPermissionToDeleteException();
         }
 
         userRepository.delete(user);

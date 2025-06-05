@@ -9,7 +9,7 @@ import java.sql.Timestamp;
 import java.util.UUID;
 
 @Getter
-public class CommentLikeReponse {
+public class CommentLikeResponse {
 
     private UUID id;
 
@@ -32,7 +32,7 @@ public class CommentLikeReponse {
     private Timestamp commentCreatedAt;
 
     @Builder
-    private CommentLikeReponse(UUID id, UUID likeBy, Timestamp createdAt, UUID commentId, UUID articleId, UUID commentUserId, String commentUserNickname, String content, int likeCount, Timestamp commentCreatedAt) {
+    private CommentLikeResponse(UUID id, UUID likeBy, Timestamp createdAt, UUID commentId, UUID articleId, UUID commentUserId, String commentUserNickname, String content, int likeCount, Timestamp commentCreatedAt) {
         this.id = id;
         this.likeBy = likeBy;
         this.createdAt = createdAt;
@@ -45,8 +45,8 @@ public class CommentLikeReponse {
         this.commentCreatedAt = commentCreatedAt;
     }
 
-    public static CommentLikeReponse of(CommentsManagement commentsManagement, CommentLike commentLike) {
-        return CommentLikeReponse.builder()
+    public static CommentLikeResponse of(CommentsManagement commentsManagement, CommentLike commentLike) {
+        return CommentLikeResponse.builder()
                 .id(commentLike.getId())
                 .likeBy(commentLike.getId())
                 .createdAt(commentLike.getCreatedAt())
