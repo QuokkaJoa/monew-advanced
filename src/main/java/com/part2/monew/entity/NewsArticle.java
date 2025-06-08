@@ -26,7 +26,7 @@ public class NewsArticle {
     private UUID id;
 
     //추가 예)네이버 기사 조선 기사
-    @Column(name = "sourceIn", length = 100)
+    @Column(name = "source_in", length = 100)
     private String sourceIn;
 
     @Column(name = "source_url", nullable = false, length = 2048)
