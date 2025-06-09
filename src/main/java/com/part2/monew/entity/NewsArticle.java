@@ -76,7 +76,16 @@ public class NewsArticle {
     @Builder.Default
     private List<ActivityDetail> views = new ArrayList<>();
 
-    public void softDelete() {
+    public NewsArticle(String sourceUrl, String title, Timestamp publishedDate, String summary, Long viewCount) {
+        this.isDeleted = false;
+        this.sourceUrl = sourceUrl;
+        this.title = title;
+        this.publishedDate = publishedDate;
+        this.summary = summary;
+        this.viewCount = viewCount;
+    }
+
+        public void softDelete() {
         this.isDeleted = true;
     }
 
