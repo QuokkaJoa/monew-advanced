@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -22,7 +21,7 @@ public class NewsArticle {
 
     @Id
     @GeneratedValue(generator = "UUID")
-    @Column(name = "news_articles_id", updatable = false, nullable = false, columnDefinition = "UUID")
+    @Column(name = "news_article_id", updatable = false, nullable = false, columnDefinition = "UUID")
     private UUID id;
 
     //추가 예)네이버 기사 조선 기사
@@ -38,15 +37,14 @@ public class NewsArticle {
     @Column(name = "published_date")
     private Timestamp publishedDate;
 
-    @Lob
-    @Column(nullable = false, length = 10000)
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String summary;
 
-    @Column(name = "view_count", columnDefinition = "BIGINT DEFAULT 0")
+    @Column(name = "view_counts", columnDefinition = "BIGINT DEFAULT 0")
     @Builder.Default
     private Long viewCount = 0L;
 
-    @Column(name = "comment_count", columnDefinition = "BIGINT DEFAULT 0")
+    @Column(name = "comment_counts", columnDefinition = "BIGINT DEFAULT 0")
     @Builder.Default
     private Long commentCount = 0L;
 
@@ -62,6 +60,8 @@ public class NewsArticle {
     @Column(name = "updated_at")
     private Timestamp updatedAt;
 
+    @Transient
+    private Long actualCommentCount;
 
     @OneToMany(mappedBy = "newsArticle", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default

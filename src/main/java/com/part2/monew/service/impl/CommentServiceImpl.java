@@ -58,18 +58,19 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
-    public CommentResponse create(CreateCommentRequest requeset) {
-        User user = userRepository.findById(requeset.getUserId())
+    public CommentResponse create(CreateCommentRequest request) {
+        User user = userRepository.findById(request.getUserId())
                 .orElseThrow(UserNotFoundException::new);
 
 
-        NewsArticle article = articleRepository.findById(requeset.getArticleId())
+        NewsArticle article = articleRepository.findById(request.getArticleId())
                 .orElseThrow(ArticleNotFoundException::new);
 
-        CommentsManagement comment = CommentsManagement.create(user, article, requeset.getContent(), 0);
+        CommentsManagement comment = CommentsManagement.create(user, article, request.getContent(), 0);
 
         CommentsManagement saveComment = commentRepository.saveAndFlush(comment);
-
+        article.incrementCommentCount();
+        articleRepository.save(article);
         return CommentResponse.of(saveComment);
 
     }
