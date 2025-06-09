@@ -11,6 +11,7 @@ import com.part2.monew.repository.InterestRepository;
 import com.part2.monew.service.impl.NewsArticleService;
 import com.part2.monew.service.impl.NewsCrawlingApiServiceImpl;
 import com.part2.monew.service.newsprovider.NewsProvider;
+import com.part2.monew.service.CategoryKeywordService;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -36,16 +37,14 @@ public class SimpleNewsCollectionService {
     private final NewsProviderProperties newsProviderProperties;
     private final List<NewsProvider> newsProviders;
     private final NewsBackupS3Manager newsBackupS3Manager;
-
-    // 하드코딩 사전
-    private final Map<String, List<String>> keywordExpansionMap = new HashMap<>();
+    private final CategoryKeywordService categoryKeywordService;
 
     public SimpleNewsCollectionService(NewsCrawlingApiServiceImpl newsCrawlingService,
         NewsArticleService newsArticleService, InterestRepository interestRepository,
         InterestKeywordRepository interestKeywordRepository,
         InterestNewsArticleRepository interestNewsArticleRepository,
         NewsProviderProperties newsProviderProperties, List<NewsProvider> newsProviders,
-        NewsBackupS3Manager newsBackupS3Manager) {
+        NewsBackupS3Manager newsBackupS3Manager, CategoryKeywordService categoryKeywordService) {
         this.newsCrawlingService = newsCrawlingService;
         this.newsArticleService = newsArticleService;
         this.interestRepository = interestRepository;
@@ -54,84 +53,12 @@ public class SimpleNewsCollectionService {
         this.newsProviderProperties = newsProviderProperties;
         this.newsProviders = newsProviders;
         this.newsBackupS3Manager = newsBackupS3Manager;
-        initializeKeywordExpansionMap();
+        this.categoryKeywordService = categoryKeywordService;
+        
+        log.info("SimpleNewsCollectionService 초기화 완료 - CategoryKeywordService 사용");
     }
 
-    private void initializeKeywordExpansionMap() {
-        keywordExpansionMap.put("뉴스",
-            Arrays.asList("뉴스", "소식", "보도", "기사", "발표", "공개", "확인", "보고"));
-        keywordExpansionMap.put("한국", Arrays.asList("한국", "국내", "우리나라", "대한민국", "서울", "부산", "지역"));
-        keywordExpansionMap.put("정부", Arrays.asList("정부", "당국", "관계자", "담당자", "공무원", "행정부"));
-        keywordExpansionMap.put("국민", Arrays.asList("국민", "시민", "주민", "사람들", "개인", "소비자"));
 
-        // 경제 분야
-        keywordExpansionMap.put("경제",
-            Arrays.asList("경제", "금융", "투자", "기업", "산업", "무역", "주식", "은행", "자본", "시장", "돈", "자금",
-                "재정", "예산", "물가", "가격"));
-        keywordExpansionMap.put("투자",
-            Arrays.asList("투자", "자본", "펀드", "주식", "채권", "증권", "자산", "수익", "이익", "손실"));
-        keywordExpansionMap.put("기업",
-            Arrays.asList("기업", "회사", "법인", "사업", "경영", "매출", "수익", "직장", "근무", "일자리", "취업"));
-        keywordExpansionMap.put("은행",
-            Arrays.asList("은행", "금융", "대출", "적금", "예금", "신용", "카드", "계좌"));
-
-        keywordExpansionMap.put("IT",
-            Arrays.asList("IT", "기술", "컴퓨터", "소프트웨어", "디지털", "인터넷", "데이터", "온라인", "웹", "앱", "스마트폰",
-                "휴대폰"));
-        keywordExpansionMap.put("AI",
-            Arrays.asList("AI", "인공지능", "머신러닝", "딥러닝", "로봇", "자동화", "알고리즘", "빅데이터"));
-        keywordExpansionMap.put("인공지능",
-            Arrays.asList("인공지능", "AI", "머신러닝", "딥러닝", "신경망", "알고리즘", "자동화", "로봇"));
-        keywordExpansionMap.put("컴퓨터",
-            Arrays.asList("컴퓨터", "PC", "노트북", "하드웨어", "프로세서", "메모리", "게임", "인터넷"));
-        keywordExpansionMap.put("소프트웨어",
-            Arrays.asList("소프트웨어", "프로그램", "앱", "애플리케이션", "시스템", "개발", "코딩"));
-        keywordExpansionMap.put("프로그래밍",
-            Arrays.asList("프로그래밍", "개발", "코딩", "프로그램", "소프트웨어", "개발자", "엔지니어"));
-        keywordExpansionMap.put("스마트폰",
-            Arrays.asList("스마트폰", "휴대폰", "핸드폰", "모바일", "앱", "어플", "삼성", "애플", "아이폰"));
-
-        // === 정치 분야 (대폭 확장) ===
-        keywordExpansionMap.put("정치",
-            Arrays.asList("정치", "정부", "국회", "대통령", "정책", "선거", "정당", "의원", "장관", "국정"));
-        keywordExpansionMap.put("대통령", Arrays.asList("대통령", "정부", "청와대", "국정", "정책", "발표", "지시"));
-        keywordExpansionMap.put("국회", Arrays.asList("국회", "의원", "법안", "정치", "여당", "야당", "국정감사"));
-        keywordExpansionMap.put("선거", Arrays.asList("선거", "투표", "후보", "정당", "정치", "당선", "공약"));
-
-        // === 사회 분야 (대폭 확장) ===
-        keywordExpansionMap.put("사회",
-            Arrays.asList("사회", "교육", "문화", "환경", "의료", "복지", "시민", "생활", "일상", "문제", "이슈"));
-        keywordExpansionMap.put("교육",
-            Arrays.asList("교육", "학교", "학생", "선생님", "교사", "대학", "입시", "공부", "학습"));
-        keywordExpansionMap.put("의료",
-            Arrays.asList("의료", "병원", "의사", "간호사", "치료", "수술", "약", "건강", "질병"));
-        keywordExpansionMap.put("환경",
-            Arrays.asList("환경", "기후", "오염", "에너지", "재활용", "자연", "공기", "물"));
-        keywordExpansionMap.put("문화", Arrays.asList("문화", "예술", "전시", "책", "축제", "미술", "조각"));
-        keywordExpansionMap.put("연예",
-            Arrays.asList("연예", "연예인", "가수", "배우", "드라마", "영화", "음악", "공연", "콘서트", "방송"));
-
-        // === 스포츠 분야 (대폭 확장) ===
-        keywordExpansionMap.put("스포츠",
-            Arrays.asList("스포츠", "축구", "야구", "올림픽", "경기", "선수", "팀", "운동", "체육"));
-        keywordExpansionMap.put("축구", Arrays.asList("축구", "월드컵", "선수", "골", "경기", "팀", "리그"));
-        keywordExpansionMap.put("야구", Arrays.asList("야구", "선수", "홈런", "경기", "팀", "리그", "승부"));
-        keywordExpansionMap.put("올림픽", Arrays.asList("올림픽", "선수", "메달", "경기", "국가대표", "스포츠"));
-
-        // === 일상생활 키워드 추가 ===
-        keywordExpansionMap.put("생활", Arrays.asList("생활", "일상", "가족", "집", "음식", "요리", "쇼핑", "여행"));
-        keywordExpansionMap.put("날씨", Arrays.asList("날씨", "기상", "비", "눈", "바람", "온도", "태풍", "폭우"));
-        keywordExpansionMap.put("교통", Arrays.asList("교통", "버스", "지하철", "자동차", "도로", "운전", "사고"));
-        keywordExpansionMap.put("음식", Arrays.asList("음식", "요리", "맛집", "레스토랑", "카페", "먹거리", "식당"));
-
-        // === 국제 관련 ===
-        keywordExpansionMap.put("국제",
-            Arrays.asList("국제", "해외", "외국", "글로벌", "세계", "미국", "중국", "일본"));
-        keywordExpansionMap.put("미국", Arrays.asList("미국", "워싱턴", "트럼프", "바이든", "달러", "NATO"));
-        keywordExpansionMap.put("중국", Arrays.asList("중국", "베이징", "시진핑", "위안화", "홍콩", "대만"));
-
-        log.info("키워드 확장 사전 초기화 완료: {}개 기본 키워드 (대폭 확장)", keywordExpansionMap.size());
-    }
 
 
     public List<NewsArticle> collectNewsWithSimpleKeywordMatching() {
@@ -181,8 +108,8 @@ public class SimpleNewsCollectionService {
             List<String> originalKeywords = interestKeywordRepository.findKeywordsByInterestName(
                 interest.getName());
             if (!originalKeywords.isEmpty()) {
-                // 하드코딩된 사전으로 키워드 확장
-                Set<String> expandedKeywords = expandKeywordsWithDictionary(originalKeywords);
+                // CategoryKeywordService로 키워드 확장
+                Set<String> expandedKeywords = expandKeywordsWithCategoryService(originalKeywords);
                 interestKeywordsMap.put(interest.getName(), new ArrayList<>(expandedKeywords));
 
                 log.info("관심사 '{}': {}개 → {}개 키워드 확장", interest.getName(), originalKeywords.size(),
@@ -196,15 +123,21 @@ public class SimpleNewsCollectionService {
     }
 
 
-    private Set<String> expandKeywordsWithDictionary(List<String> originalKeywords) {
+    /**
+     * CategoryKeywordService를 사용하여 키워드 확장
+     */
+    private Set<String> expandKeywordsWithCategoryService(List<String> originalKeywords) {
         Set<String> expandedKeywords = new HashSet<>(originalKeywords); // 원본 키워드 포함
 
         for (String keyword : originalKeywords) {
-            if (keywordExpansionMap.containsKey(keyword)) {
-                expandedKeywords.addAll(keywordExpansionMap.get(keyword));
-                log.debug("키워드 '{}' 정확 매칭 확장: {}", keyword, keywordExpansionMap.get(keyword));
-            } else {
-                log.debug("키워드 '{}' - 사전에 없음, 원본 그대로 사용", keyword);
+            // CategoryKeywordService에서 해당 키워드가 속한 카테고리 찾기
+            for (String category : categoryKeywordService.getAllCategories()) {
+                if (categoryKeywordService.isKeywordInCategory(keyword, category)) {
+                    List<String> categoryKeywords = categoryKeywordService.getKeywordsForCategory(category);
+                    expandedKeywords.addAll(categoryKeywords);
+                    log.debug("키워드 '{}' 카테고리 '{}' 확장: {}개 키워드 추가", keyword, category, categoryKeywords.size());
+                    break; // 첫 번째 매칭 카테고리만 사용
+                }
             }
         }
 
@@ -219,26 +152,32 @@ public class SimpleNewsCollectionService {
         log.info("-- API 방식 뉴스 수집 + 스마트 키워드 전략 --");
 
         try {
-            // 사용자 키워드가 하드코딩 사전에 있는지 확인
-            List<String> dictionaryMatchedKeywords = new ArrayList<>();
+            // CategoryKeywordService에 등록된 키워드인지 확인
+            List<String> categoryMatchedKeywords = new ArrayList<>();
             List<String> unknownKeywords = new ArrayList<>();
 
             for (String keyword : keywords) {
-                if (keywordExpansionMap.containsKey(keyword)) {
-                    dictionaryMatchedKeywords.add(keyword);
-                    log.info("하드코딩 사전 매칭 키워드: '{}'", keyword);
-                } else {
+                boolean foundInCategory = false;
+                for (String category : categoryKeywordService.getAllCategories()) {
+                    if (categoryKeywordService.isKeywordInCategory(keyword, category)) {
+                        categoryMatchedKeywords.add(keyword);
+                        log.info("카테고리 매칭 키워드: '{}' (카테고리: {})", keyword, category);
+                        foundInCategory = true;
+                        break;
+                    }
+                }
+                if (!foundInCategory) {
                     unknownKeywords.add(keyword);
-                    log.info("사전에 없는 키워드: '{}'", keyword);
+                    log.info("카테고리에 없는 키워드: '{}'", keyword);
                 }
             }
 
             List<NewsArticle> allArticles = new ArrayList<>();
 
-            if (!dictionaryMatchedKeywords.isEmpty()) {
-                log.info("=== 특화 피드 수집: {}개 키워드로 20개 기사 수집 ===", dictionaryMatchedKeywords.size());
+            if (!categoryMatchedKeywords.isEmpty()) {
+                log.info("=== 특화 피드 수집: {}개 키워드로 20개 기사 수집 ===", categoryMatchedKeywords.size());
                 List<NewsArticle> specializedArticles = newsCrawlingService.collectNewsForKeywords(
-                    dictionaryMatchedKeywords, 20);
+                    categoryMatchedKeywords, 20);
                 allArticles.addAll(specializedArticles);
                 log.info("특화 피드에서 {}개 기사 수집됨", specializedArticles.size());
             }
@@ -304,14 +243,14 @@ public class SimpleNewsCollectionService {
 
         List<NewsArticle> allRssArticles = new ArrayList<>();
 
-        // 활성화된 RSS 프로바이더만 필터링 (최대 3개로 제한)
+        // 활성화된 RSS 프로바이더만 필터링 (제한 해제 - 모든 RSS 소스 사용)
         Map<String, NewsProviderProperties.ProviderConfig> enabledRssProviders = newsProviderProperties.getProviders()
             .entrySet().stream().filter(
                 entry -> "rss".equals(entry.getValue().getType()) && entry.getValue().isEnabled())
-            .limit(3) // 최대 3개 RSS 소스만 처리
+            .limit(15) // 최대 15개 RSS 소스로 확대 (34개 중 성능 고려)
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        log.info("활성화된 RSS 프로바이더: {}개 (최대 3개 제한)", enabledRssProviders.size());
+        log.info("활성화된 RSS 프로바이더: {}개 (다양한 언론사)", enabledRssProviders.size());
 
         // RSS Provider 찾기
         NewsProvider rssProvider = newsProviders.stream()
@@ -329,7 +268,7 @@ public class SimpleNewsCollectionService {
             NewsProviderProperties.ProviderConfig config = entry.getValue();
 
             try {
-                log.info("RSS '{}' 빠른 수집 중... (타임아웃 5초)", config.getName());
+                log.info("RSS '{}' 수집 중... (타임아웃 10초)", config.getName());
 
                 long startTime = System.currentTimeMillis();
 
@@ -337,9 +276,9 @@ public class SimpleNewsCollectionService {
                 List<NewsArticleDto> dtos = rssProvider.fetchNews(config, new ArrayList<>());
                 List<NewsArticle> articles = convertDtosToEntities(dtos);
 
-                // 각 RSS당 최대 5개만 가져오기
-                if (articles.size() > 5) {
-                    articles = articles.subList(0, 5);
+                // 각 RSS당 최대 10개로 확대
+                if (articles.size() > 10) {
+                    articles = articles.subList(0, 10);
                 }
 
                 allRssArticles.addAll(articles);
@@ -347,8 +286,8 @@ public class SimpleNewsCollectionService {
                 long elapsed = System.currentTimeMillis() - startTime;
                 log.info("RSS '{}': {}개 기사 수집 ({}ms)", config.getName(), articles.size(), elapsed);
 
-                // 개별 RSS 처리가 5초 이상 걸리면 중단
-                if (elapsed > 5000) {
+                // 개별 RSS 처리가 10초 이상 걸리면 중단
+                if (elapsed > 10000) {
                     log.warn("RSS '{}' 처리 시간 초과 ({}ms), 다음 소스로 이동", config.getName(), elapsed);
                 }
 
