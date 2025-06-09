@@ -32,18 +32,18 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, UUID> 
             CAST(:cursor AS TEXT) IS NULL OR :cursor = '' OR
             (:orderBy = 'publishDate' AND :direction = 'DESC' AND n.published_date < CAST(:cursor AS TIMESTAMP)) OR
             (:orderBy = 'publishDate' AND :direction = 'ASC' AND n.published_date > CAST(:cursor AS TIMESTAMP)) OR
-            (:orderBy = 'viewCount' AND :direction = 'DESC' AND n.view_count < CAST(:cursor AS BIGINT)) OR
-            (:orderBy = 'viewCount' AND :direction = 'ASC' AND n.view_count > CAST(:cursor AS BIGINT)) OR
-            (:orderBy = 'commentCount' AND :direction = 'DESC' AND n.comment_count < CAST(:cursor AS BIGINT)) OR
-            (:orderBy = 'commentCount' AND :direction = 'ASC' AND n.comment_count > CAST(:cursor AS BIGINT))
+            (:orderBy = 'viewCount' AND :direction = 'DESC' AND n.view_counts < CAST(:cursor AS BIGINT)) OR
+            (:orderBy = 'viewCount' AND :direction = 'ASC' AND n.view_counts > CAST(:cursor AS BIGINT)) OR
+            (:orderBy = 'commentCount' AND :direction = 'DESC' AND n.comment_counts < CAST(:cursor AS BIGINT)) OR
+            (:orderBy = 'commentCount' AND :direction = 'ASC' AND n.comment_counts > CAST(:cursor AS BIGINT))
         )
         ORDER BY 
         CASE WHEN :orderBy = 'publishDate' AND :direction = 'DESC' THEN n.published_date END DESC,
         CASE WHEN :orderBy = 'publishDate' AND :direction = 'ASC' THEN n.published_date END ASC,
-        CASE WHEN :orderBy = 'viewCount' AND :direction = 'DESC' THEN n.view_count END DESC,
-        CASE WHEN :orderBy = 'viewCount' AND :direction = 'ASC' THEN n.view_count END ASC,
-        CASE WHEN :orderBy = 'commentCount' AND :direction = 'DESC' THEN n.comment_count END DESC,
-        CASE WHEN :orderBy = 'commentCount' AND :direction = 'ASC' THEN n.comment_count END ASC,
+        CASE WHEN :orderBy = 'viewCount' AND :direction = 'DESC' THEN n.view_counts END DESC,
+        CASE WHEN :orderBy = 'viewCount' AND :direction = 'ASC' THEN n.view_counts END ASC,
+        CASE WHEN :orderBy = 'commentCount' AND :direction = 'DESC' THEN n.comment_counts END DESC,
+        CASE WHEN :orderBy = 'commentCount' AND :direction = 'ASC' THEN n.comment_counts END ASC,
         n.published_date DESC
         LIMIT :limit
         """, nativeQuery = true)
@@ -74,32 +74,34 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, UUID> 
 
     // 댓글 수 정렬 전용 쿼리 (실제 댓글 수로 정렬)
     @Query(value = """
-        SELECT n.*
-        FROM news_articles n 
-        LEFT JOIN (
-            SELECT cm.news_article_id, COUNT(cm.comment_management_id) as actual_comment_count
-            FROM comments_managements cm 
-            WHERE cm.active = true 
-            GROUP BY cm.news_article_id
-        ) comment_counts ON n.news_articles_id = comment_counts.news_article_id
-        WHERE n.is_deleted = false 
-        AND (CAST(:keyword AS TEXT) IS NULL OR :keyword = '' OR 
-             LOWER(n.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')) OR 
-             LOWER(n.summary) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')))
-        AND (CAST(:sourceIn AS TEXT) IS NULL OR :sourceIn = '' OR n.source_in = CAST(:sourceIn AS TEXT))
-        AND (CAST(:publishDateFrom AS TIMESTAMP) IS NULL OR n.published_date >= CAST(:publishDateFrom AS TIMESTAMP))
-        AND (CAST(:publishDateTo AS TIMESTAMP) IS NULL OR n.published_date <= CAST(:publishDateTo AS TIMESTAMP))
-        AND (
-            CAST(:cursor AS TEXT) IS NULL OR :cursor = '' OR
-            (:direction = 'DESC' AND COALESCE(comment_counts.actual_comment_count, 0) < CAST(:cursor AS BIGINT)) OR
-            (:direction = 'ASC' AND COALESCE(comment_counts.actual_comment_count, 0) > CAST(:cursor AS BIGINT))
-        )
-        ORDER BY 
-            CASE WHEN :direction = 'DESC' THEN COALESCE(comment_counts.actual_comment_count, 0) END DESC,
-            CASE WHEN :direction = 'ASC' THEN COALESCE(comment_counts.actual_comment_count, 0) END ASC,
-            n.published_date DESC
-        LIMIT :limit
-        """, nativeQuery = true)
+    SELECT 
+        n.*, 
+        COALESCE(comment_counts.actual_comment_count, 0) AS actual_comment_count
+    FROM news_articles n 
+    LEFT JOIN (
+        SELECT cm.news_article_id, COUNT(cm.comment_management_id) AS actual_comment_count
+        FROM comments_managements cm 
+        WHERE cm.active = true 
+        GROUP BY cm.news_article_id
+    ) comment_counts ON n.news_article_id = comment_counts.news_article_id
+    WHERE n.is_deleted = false 
+      AND (CAST(:keyword AS TEXT) IS NULL OR :keyword = '' OR 
+           LOWER(n.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')) OR 
+           LOWER(n.summary) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')))
+      AND (CAST(:sourceIn AS TEXT) IS NULL OR :sourceIn = '' OR 
+           n.source_in = CAST(:sourceIn AS TEXT))
+      AND (CAST(:publishDateFrom AS TIMESTAMP) IS NULL OR 
+           n.published_date >= CAST(:publishDateFrom AS TIMESTAMP))
+      AND (CAST(:publishDateTo AS TIMESTAMP) IS NULL OR 
+           n.published_date <= CAST(:publishDateTo AS TIMESTAMP))
+      AND (CAST(:cursor AS TEXT) IS NULL OR :cursor = '' OR
+           (:direction = 'DESC' AND COALESCE(comment_counts.actual_comment_count, 0) < CAST(:cursor AS BIGINT)) OR
+           (:direction = 'ASC' AND COALESCE(comment_counts.actual_comment_count, 0) > CAST(:cursor AS BIGINT)))
+    ORDER BY 
+        COALESCE(comment_counts.actual_comment_count, 0) DESC,
+        n.published_date DESC
+    LIMIT :limit
+    """, nativeQuery = true)
     List<NewsArticle> findArticlesSortedByCommentCount(
         @Param("keyword") String keyword,
         @Param("sourceIn") String sourceIn,
@@ -122,12 +124,12 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, UUID> 
         AND (CAST(:publishDateTo AS TIMESTAMP) IS NULL OR n.published_date <= CAST(:publishDateTo AS TIMESTAMP))
         AND (
             CAST(:cursor AS TEXT) IS NULL OR :cursor = '' OR
-            (:direction = 'DESC' AND n.view_count < CAST(:cursor AS BIGINT)) OR
-            (:direction = 'ASC' AND n.view_count > CAST(:cursor AS BIGINT))
+            (:direction = 'DESC' AND n.view_counts < CAST(:cursor AS BIGINT)) OR
+            (:direction = 'ASC' AND n.view_counts > CAST(:cursor AS BIGINT))
         )
         ORDER BY 
-            CASE WHEN :direction = 'DESC' THEN n.view_count END DESC,
-            CASE WHEN :direction = 'ASC' THEN n.view_count END ASC,
+            CASE WHEN :direction = 'DESC' THEN n.view_counts END DESC,
+            CASE WHEN :direction = 'ASC' THEN n.view_counts END ASC,
             n.published_date DESC
         LIMIT :limit
         """, nativeQuery = true)

@@ -15,21 +15,22 @@ import java.util.UUID;
 @Entity
 @Getter
 @Setter
-@Table(name = "users_subscribers", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"users_id", "interests_id"})
+@Table(name = "user_subscribes", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"user_id", "interest_id"})
 })
 public class UserSubscriber {
+
     @Id
     @UuidGenerator
-    @Column(name = "user_subscriber_id",nullable = false, updatable = false, columnDefinition = "UUID")
+    @Column(name = "user_subscribe_id", nullable = false, updatable = false, columnDefinition = "UUID")
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "users_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "interests_id", nullable = false)
+    @JoinColumn(name = "interest_id", nullable = false)
     private Interest interest;
 
     @CreationTimestamp

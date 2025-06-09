@@ -16,7 +16,7 @@ public interface InterestNewsArticleRepository extends JpaRepository<InterestNew
     @Query(value = """
         SELECT COUNT(*) > 0 
         FROM interests_news_articles ina
-        WHERE ina.news_articles_id = :newsArticleId AND ina.interests_id = :interestId
+        WHERE ina.news_article_id = :newsArticleId AND ina.interest_id = :interestId
         """, nativeQuery = true)
     boolean existsByNewsArticleIdAndInterestId(@Param("newsArticleId") UUID newsArticleId, @Param("interestId") UUID interestId);
 } 
