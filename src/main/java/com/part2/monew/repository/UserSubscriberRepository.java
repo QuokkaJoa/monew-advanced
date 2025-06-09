@@ -19,7 +19,7 @@ public interface UserSubscriberRepository extends JpaRepository<UserSubscriber, 
   @Query("SELECT us.interest.id FROM UserSubscriber us WHERE us.user.id = :userId AND us.interest.id IN :interestIds")
   Set<UUID> findSubscribedInterestIdsByUserIdAndInterestIdsIn(@Param("userId") UUID userId, @Param("interestIds") List<UUID> interestIds);
 
-  List<UserSubscriber> findByUser(User user);
+  List<UserSubscriber> findSubscriptionsByUser(User user);
 
   @Query("SELECT us FROM UserSubscriber us JOIN FETCH us.interest")
   List<UserSubscriber> findAllWithInterest();
