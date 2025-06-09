@@ -19,7 +19,7 @@ import java.util.UUID;
 public class CommentLike {
     @Id
     @UuidGenerator
-    @Column(name = "commentLike_id")
+    @Column(name = "comment_like_id")
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)

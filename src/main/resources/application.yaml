@@ -8,7 +8,11 @@ spring:
       matching-strategy: ant_path_matcher
   profiles:
     active: ${SPRING_PROFILES_ACTIVE}
-
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
 server:
   port: ${APP_PORT:8080}
 
@@ -24,11 +28,225 @@ monew:
     local:
       root-path: ${STORAGE_LOCAL_ROOT_PATH:./monew-storage}
     s3:
-      accessKeyId: ${AWS_ACCESS_KEY_ID}
-      secretAccessKey: ${AWS_SECRET_ACCESS_KEY}
-      region: ${AWS_S3_REGION}
-      bucket: ${AWS_S3_BUCKET}
+      accessKeyId: ${AWS_ACCESS_KEY_ID:dummy-access-key}
+      secretAccessKey: ${AWS_SECRET_ACCESS_KEY:dummy-secret-key}
+      region: ${AWS_S3_REGION:ap-northeast-2}
+      bucket: ${AWS_S3_BUCKET:monewbackup}
+  news-providers:
+    naver-api:
+      type: "api"
+      name: "Naver News API"
+      api-url: "https://openapi.naver.com/v1/search/news.json"
+      client-id: ${NAVER_API_CLIENT_ID:7TUbEIvoUgYFrFmQEuEd}
+      client-secret: ${NAVER_API_CLIENT_SECRET:Lfz7vkUhfy}
+      enabled: true # 사용 여부
 
+      default-display: 10
+      default-sort: "date"
+    hankyung-all:
+      type: "rss"
+      name: "한국경제 전체뉴스"
+      feed-url: "https://www.hankyung.com/feed/all-news"
+      enabled: true
+    hankyung-economy:
+      type: "rss"
+      name: "한국경제 경제"
+      feed-url: "https://www.hankyung.com/feed/economy"
+      enabled: true
+    hankyung-finance:
+      type: "rss"
+      name: "한국경제 증권"
+      feed-url: "https://www.hankyung.com/feed/finance"
+      enabled: true
+    hankyung-realestate:
+      type: "rss"
+      name: "한국경제 부동산"
+      feed-url: "https://www.hankyung.com/feed/realestate"
+      enabled: true
+    hankyung-it:
+      type: "rss"
+      name: "한국경제 IT"
+      feed-url: "https://www.hankyung.com/feed/it"
+      enabled: true
+    hankyung-politics:
+      type: "rss"
+      name: "한국경제 정치"
+      feed-url: "https://www.hankyung.com/feed/politics"
+      enabled: true
+    hankyung-international:
+      type: "rss"
+      name: "한국경제 국제"
+      feed-url: "https://www.hankyung.com/feed/international"
+      enabled: true
+    hankyung-society:
+      type: "rss"
+      name: "한국경제 사회"
+      feed-url: "https://www.hankyung.com/feed/society"
+      enabled: true
+    hankyung-life:
+      type: "rss"
+      name: "한국경제 생활"
+      feed-url: "https://www.hankyung.com/feed/life"
+      enabled: true
+    hankyung-opinion:
+      type: "rss"
+      name: "한국경제 오피니언"
+      feed-url: "https://www.hankyung.com/feed/opinion"
+      enabled: true
+    hankyung-sports:
+      type: "rss"
+      name: "한국경제 스포츠"
+      feed-url: "https://www.hankyung.com/feed/sports"
+      enabled: true
+    hankyung-entertainment:
+      type: "rss"
+      name: "한국경제 연예"
+      feed-url: "https://www.hankyung.com/feed/entertainment"
+      enabled: true
+    hankyung-video:
+      type: "rss"
+      name: "한국경제 VIDEO"
+      feed-url: "https://www.hankyung.com/feed/video"
+      enabled: true
+    chosun-politics:
+      type: "rss"
+      name: "조선일보 정치"
+      feed-url: "https://www.chosun.com/arc/outboundfeeds/rss/category/politics/?outputType=xml"
+      enabled: true
+    chosun-economy:
+      type: "rss"
+      name: "조선일보 경제"
+      feed-url: "https://www.chosun.com/arc/outboundfeeds/rss/category/economy/?outputType=xml"
+      enabled: true
+    chosun-society:
+      type: "rss"
+      name: "조선일보 사회"
+      feed-url: "https://www.chosun.com/arc/outboundfeeds/rss/category/national/?outputType=xml"
+      enabled: true
+    chosun-international:
+      type: "rss"
+      name: "조선일보 국제"
+      feed-url: "https://www.chosun.com/arc/outboundfeeds/rss/category/international/?outputType=xml"
+      enabled: true
+    chosun-culture:
+      type: "rss"
+      name: "조선일보 문화/라이프"
+      feed-url: "https://www.chosun.com/arc/outboundfeeds/rss/category/culture-life/?outputType=xml"
+      enabled: true
+    chosun-opinion:
+      type: "rss"
+      name: "조선일보 오피니언"
+      feed-url: "https://www.chosun.com/arc/outboundfeeds/rss/category/opinion/?outputType=xml"
+      enabled: true
+    chosun-sports:
+      type: "rss"
+      name: "조선일보 스포츠"
+      feed-url: "https://www.chosun.com/arc/outboundfeeds/rss/category/sports/?outputType=xml"
+      enabled: true
+    chosun-entertainment:
+      type: "rss"
+      name: "조선일보 연예"
+      feed-url: "https://www.chosun.com/arc/outboundfeeds/rss/category/entertainments/?outputType=xml"
+      enabled: true
+    yonhap-latest:
+      type: "rss"
+      name: "연합뉴스TV 최신"
+      feed-url: "http://www.yonhapnewstv.co.kr/browse/feed/"
+      enabled: true
+    yonhap-headline:
+      type: "rss"
+      name: "연합뉴스TV 헤드라인"
+      feed-url: "http://www.yonhapnewstv.co.kr/category/news/headline/feed/"
+      enabled: true
+    yonhap-politics:
+      type: "rss"
+      name: "연합뉴스TV 정치"
+      feed-url: "http://www.yonhapnewstv.co.kr/category/news/politics/feed/"
+      enabled: true
+    yonhap-economy:
+      type: "rss"
+      name: "연합뉴스TV 경제"
+      feed-url: "http://www.yonhapnewstv.co.kr/category/news/economy/feed/"
+      enabled: true
+    yonhap-society:
+      type: "rss"
+      name: "연합뉴스TV 사회"
+      feed-url: "http://www.yonhapnewstv.co.kr/category/news/society/feed/"
+      enabled: true
+    yonhap-local:
+      type: "rss"
+      name: "연합뉴스TV 지역"
+      feed-url: "http://www.yonhapnewstv.co.kr/category/news/local/feed/"
+      enabled: true
+    yonhap-international:
+      type: "rss"
+      name: "연합뉴스TV 세계"
+      feed-url: "http://www.yonhapnewstv.co.kr/category/news/international/feed/"
+      enabled: true
+    yonhap-culture:
+      type: "rss"
+      name: "연합뉴스TV 문화·연예"
+      feed-url: "http://www.yonhapnewstv.co.kr/category/news/culture/feed/"
+      enabled: true
+    yonhap-sports:
+      type: "rss"
+      name: "연합뉴스TV 스포츠"
+      feed-url: "http://www.yonhapnewstv.co.kr/category/news/sports/feed/"
+      enabled: true
+    yonhap-weather:
+      type: "rss"
+      name: "연합뉴스TV 날씨"
+      feed-url: "http://www.yonhapnewstv.co.kr/category/news/weather/feed/"
+      enabled: true
+    sbs-news:
+      type: "rss"
+      name: "SBS 뉴스"
+      feed-url: "https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=01"
+      enabled: true
+    sbs-politics:
+      type: "rss"
+      name: "SBS 정치"
+      feed-url: "https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=07"
+      enabled: true
+    sbs-economy:
+      type: "rss"
+      name: "SBS 경제"
+      feed-url: "https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=02"
+      enabled: true
+    sbs-society:
+      type: "rss"
+      name: "SBS 사회"
+      feed-url: "https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=08"
+      enabled: true
+    sbs-international:
+      type: "rss"
+      name: "SBS 국제"
+      feed-url: "https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=09"
+      enabled: true
+    sbs-sports:
+      type: "rss"
+      name: "SBS 스포츠"
+      feed-url: "https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=14"
+      enabled: true
+    sbs-entertainment:
+      type: "rss"
+      name: "SBS 연예"
+      feed-url: "https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=15"
+      enabled: true
+
+  batch:
+    news-collection:
+      enabled: ${BATCH_NEWS_COLLECTION_ENABLED:true}
+      cron: ${BATCH_NEWS_COLLECTION_CRON:0 0 * * * *}
+      keywords: ${BATCH_NEWS_KEYWORDS:경제,정치,사회,IT,스포츠}  # 일단 설정
+
+      backup:
+        enabled: ${BATCH_BACKUP_ENABLED:true}
+        local-path: ${BATCH_BACKUP_LOCAL_PATH:./backup}
+        file-format: ${BATCH_BACKUP_FORMAT:json}
+      s3-upload:
+        enabled: ${BATCH_S3_UPLOAD_ENABLED:true}
+        backup-folder: ${BATCH_S3_BACKUP_FOLDER:news-backup}
 
 management:
   info:

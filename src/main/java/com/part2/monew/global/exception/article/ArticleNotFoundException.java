@@ -6,10 +6,6 @@ import com.part2.monew.global.exception.ErrorCode;
 public class ArticleNotFoundException extends BusinessException {
 
   public ArticleNotFoundException() {
-    super(ErrorCode.ARTICLE_NOT_FOUND, ErrorCode.ARTICLE_NOT_FOUND.getMessage());
-  }
-
-  public ArticleNotFoundException(String detailMessage) {
-    super(ErrorCode.ARTICLE_NOT_FOUND, detailMessage);
+    super(ErrorCode.ARTICLE_NOT_FOUND);
   }
 }
