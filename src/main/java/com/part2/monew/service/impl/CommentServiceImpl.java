@@ -55,9 +55,12 @@ public class CommentServiceImpl implements CommentService {
 
         Long totalElements = commentRepository.totalCount(commentRequest.getArticleId());
 
+
         List<CommentResponse> commentReponses = commentsManagements.stream()
                 .map(CommentResponse::of)
                 .collect(Collectors.toList());
+
+
 
         return CursorResponse.of(commentReponses, totalElements);
     }

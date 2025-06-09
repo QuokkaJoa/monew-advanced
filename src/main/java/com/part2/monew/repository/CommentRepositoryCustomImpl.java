@@ -11,6 +11,7 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
 
+import static com.part2.monew.entity.QCommentLike.commentLike;
 import static com.part2.monew.entity.QCommentsManagement.commentsManagement;
 import static com.part2.monew.entity.QNewsArticle.newsArticle;
 import static com.part2.monew.entity.QUser.user;
@@ -28,6 +29,11 @@ public class CommentRepositoryCustomImpl implements CommentRepositoryCustom {
                 .selectFrom(commentsManagement)
                 .join(commentsManagement.user, user).fetchJoin()
                 .join(commentsManagement.newsArticle, newsArticle).fetchJoin()
+                .leftJoin(commentsManagement.commentLikes, commentLike)
+                .on(
+                        commentLike.commentsManagement.id.eq(commentsManagement.id),
+                        commentLike.user.id.eq(commentsManagement.user.id)
+                )
                 .where(
                         commentsManagement.newsArticle.id.eq(articleId),
                         commentsManagement.active.isTrue(),
