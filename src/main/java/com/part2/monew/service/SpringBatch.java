@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class SpringBatch {
-
+    // 나중에 배치로 수정함
     private static final Logger logger = LoggerFactory.getLogger(SpringBatch.class);
     
     private final BatchConfig batchConfig;
@@ -28,9 +28,7 @@ public class SpringBatch {
         logger.info("SpringBatch 초기화 완료 - 스케줄링 전용");
     }
 
-    /**
-     * 매분마다 실행되는 뉴스 수집 배치 (스케줄링만 담당)
-     */
+
     @Scheduled(cron = "0 */1 * * * *") 
     public void executeNewsCollectionBatch() {
         if (!batchConfig.isEnabled()) {
@@ -51,9 +49,7 @@ public class SpringBatch {
         }
     }
 
-    /**
-     * 매일 자정에 실행되는 백업 배치
-     */
+    //자정에 백업
     @Scheduled(cron = "0 0 0 * * ?")
     public void executeDailyBackupBatch() {
         if (!batchConfig.isEnabled()) {
@@ -72,9 +68,7 @@ public class SpringBatch {
         }
     }
 
-    /**
-     * 일일 뉴스 백업 수행 (S3 업로드)
-     */
+
     private void performDailyNewsBackup() {
         try {
             logger.info("일일 뉴스 백업 시작");

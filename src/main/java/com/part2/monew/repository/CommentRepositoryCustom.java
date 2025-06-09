@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface CommentRepositoryCustom {
-    List<CommentsManagement> findCommentsByArticleId(UUID articleId, Timestamp after, int limit);
+    List<CommentsManagement> findCommentsByArticleId(UUID articleId, Timestamp after, int limit, String orderBy, String direction);
     Long totalCount(UUID articleId);
     List<CommentsManagement> findTop10RecentCommentsByUserId(UUID userId);
 }

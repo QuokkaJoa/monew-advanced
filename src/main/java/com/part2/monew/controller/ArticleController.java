@@ -47,7 +47,7 @@ public class ArticleController {
         @RequestParam(value = "cursor", required = false) String cursor,
         @RequestParam(value = "after", required = false) String after,
         @RequestParam(value = "limit", defaultValue = "20") Integer limit,
-        @RequestHeader(value = "Monew-Request-User-ID") String userId) {
+        @RequestHeader(value = "Monew-Request-User-ID", required = false) String userId) {
         
         try {
             // 날짜 파싱
@@ -97,7 +97,7 @@ public class ArticleController {
     @PostMapping("/{articleId}/views")
     public ResponseEntity<Void> incrementViewCount(
         @PathVariable String articleId,
-        @RequestHeader(value = "Monew-Request-User-ID") String userId) {
+        @RequestHeader(value = "Monew-Request-User-ID", required = false) String userId) {
         
         try {
             UUID articleUuid = UUID.fromString(articleId);
@@ -113,7 +113,7 @@ public class ArticleController {
     @PostMapping("/{articleId}/article-views")
     public ResponseEntity<Void> incrementViewCountAlternative(
         @PathVariable String articleId,
-        @RequestHeader(value = "Monew-Request-User-ID") String userId) {
+        @RequestHeader(value = "Monew-Request-User-ID", required = false) String userId) {
         
         try {
             UUID articleUuid = UUID.fromString(articleId);

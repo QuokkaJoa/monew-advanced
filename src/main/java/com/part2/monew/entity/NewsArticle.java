@@ -62,8 +62,6 @@ public class NewsArticle {
     @Column(name = "updated_at")
     private Timestamp updatedAt;
 
-    @Transient
-    private Long actualCommentCount;
 
     @OneToMany(mappedBy = "newsArticle", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
