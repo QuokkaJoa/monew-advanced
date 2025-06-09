@@ -36,10 +36,10 @@ public class NewsCrawlingApiServiceImpl implements NewsCrawlingService {
     private static final Logger logger = LoggerFactory.getLogger(NewsCrawlingApiServiceImpl.class);
     private static final String SOURCE_NAME = "Naver News";
 
-    @Value("${monew.news-providers.naver-api.client-id}")
+    @Value("${monew.news-providers.providers.naver-api.client-id}")
     private String clientId;
 
-    @Value("${monew.news-providers.naver-api.client-secret}")
+    @Value("${monew.news-providers.providers.naver-api.client-secret}")
     private String clientSecret;
 
     private final RestTemplate restTemplate;
@@ -74,9 +74,15 @@ public class NewsCrawlingApiServiceImpl implements NewsCrawlingService {
         
         for (String keyword : keywords) {
             try {
+                // API 요청 간격 추가 (네이버 API 제한 회피)
+                Thread.sleep(1000); // 1초 대기
+                
                 List<NewsArticle> savedArticles = searchAndSaveNews(keyword, limitPerKeyword);
                 allSavedArticles.addAll(savedArticles);
+                
+                logger.info("키워드 '{}' 처리 완료: {}개 기사 저장", keyword, savedArticles.size());
             } catch (Exception e) {
+                logger.error("키워드 '{}' 처리 실패: {}", keyword, e.getMessage());
             }
         }
         
@@ -135,12 +141,29 @@ public class NewsCrawlingApiServiceImpl implements NewsCrawlingService {
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 return parseNewsSearchResponse(response.getBody());
             } else {
-                logger.warn("네이버 API 응답 실패");
+                logger.warn("네이버 API 응답 실패 - Status: {}, Body: {}", 
+                    response.getStatusCode(), response.getBody());
                 return List.of();
             }
         } catch (HttpClientErrorException e) {
-            logger.error("네이버 뉴스 API 요청 실패");
-            throw new RuntimeException("네이버 뉴스 API 요청 실패");
+            logger.error("네이버 뉴스 API 요청 실패 - Status: {}, Response: {}, Query: '{}', ClientId: '{}'", 
+                e.getStatusCode(), e.getResponseBodyAsString(), query, clientId);
+            
+            // 403 Forbidden이면 API 키 문제
+            if (e.getStatusCode().value() == 403) {
+                logger.error("API 인증 실패! 클라이언트 ID/Secret을 확인하세요.");
+            }
+            // 429 Too Many Requests면 요청 제한 초과
+            else if (e.getStatusCode().value() == 429) {
+                logger.error("API 요청 제한 초과! 잠시 후 다시 시도하세요.");
+                try {
+                    Thread.sleep(1000); // 1초 대기
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            
+            throw new RuntimeException("네이버 뉴스 API 요청 실패: " + e.getStatusCode());
         } catch (Exception e) {
             logger.error("네이버 뉴스 API 요청 중 오류 발생", e);
             throw new RuntimeException("네이버 뉴스 API 요청 중 오류 발생", e);
