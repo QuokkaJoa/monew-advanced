@@ -30,7 +30,15 @@ public enum ErrorCode {
   KEYWORD_NOT_FOUND(HttpStatus.NOT_FOUND, "K001", "해당 키워드를 찾을 수 없습니다."),
 
   // Article Errors(Axxx)
-  ARTICLE_NOT_FOUND(HttpStatus.NOT_FOUND, "A001", "해당 키워드를 찾을 수 없습니다."),
+  ARTICLE_NOT_FOUND(HttpStatus.NOT_FOUND, "A001", "해당 기사를 찾을 수 없습니다."),
+  ARTICLE_SOURCE_INVALID(HttpStatus.BAD_REQUEST, "A002", "유효하지 않은 뉴스 소스입니다."),
+  ARTICLE_SEARCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "A003", "기사 검색 중 오류가 발생했습니다."),
+  INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "A004", "날짜 범위가 올바르지 않습니다."),
+  INVALID_PAGINATION_PARAMETER(HttpStatus.BAD_REQUEST, "A005", "페이지네이션 파라미터가 올바르지 않습니다."),
+  ARTICLE_BACKUP_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "A006", "기사 백업 중 오류가 발생했습니다."),
+  ARTICLE_RESTORE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "A007", "기사 복구 중 오류가 발생했습니다."),
+  ARTICLE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "A008", "기사 삭제 중 오류가 발생했습니다."),
+  ARTICLE_ALREADY_DELETED(HttpStatus.BAD_REQUEST, "A009", "이미 삭제된 기사입니다."),
 
   // Comment Errors (Cxxx)
   COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "C001", "해당 댓글을 찾을 수 없습니다."),
