@@ -86,8 +86,6 @@ public class NewsArticleService {
                 filterDto.keyword(), getFirstSource(filterDto.sourceIn()), 
                 cursorDto.orderBy(), cursorDto.direction(), cursorDto.cursor());
 
-            logger.info("정렬 파라미터 확인 - orderBy: '{}', direction: '{}', orderBy=='commentCount': {}", 
-                cursorDto.orderBy(), cursorDto.direction(), "commentCount".equals(cursorDto.orderBy()));
 
             // 정렬 조건에 따라 적절한 쿼리 호출
             switch (cursorDto.orderBy()) {
@@ -148,7 +146,6 @@ public class NewsArticleService {
             articles = articles.subList(0, cursorDto.limit());
         }
 
-        // 응답 DTO 변환을 위해 먼저 모든 기사의 실제 댓글 수를 한 번에 조회 (N+1 문제 해결)
         List<UUID> articleIds = articles.stream().map(NewsArticle::getId).collect(Collectors.toList());
         Map<UUID, Long> commentCountMap = new HashMap<>();
         
@@ -188,7 +185,6 @@ public class NewsArticleService {
         // 응답 DTO 변환 (실제 댓글 수 포함)
         Map<UUID, Boolean> viewedStatusMap = Collections.emptyMap();
         List<NewsArticleResponseDto> responseDtos = articles.stream().map(article -> {
-            // 실제 댓글 수를 Map에서 가져오기 (단일 조회로 이미 모든 댓글 수 로드됨)
             Long actualCommentCount = commentCountMap.getOrDefault(article.getId(), 0L);
             return newsArticleMapper.toDto(article,
                 viewedStatusMap.getOrDefault(article.getId(), false), actualCommentCount);
@@ -210,7 +206,6 @@ public class NewsArticleService {
             // 실제 데이터베이스에서 distinct source 값들을 조회
             List<String> sources = newsArticleRepository.findDistinctSources();
 
-            // 빈 리스트이거나 null인 경우 기본값 제공
             if (sources == null || sources.isEmpty()) {
                 sources = Arrays.asList("chosun", "hankyung", "yonhapnewstv", "NAVER");
                 logger.warn("DB에서 뉴스 소스를 찾을 수 없어 기본값 사용: {}", sources);
@@ -221,7 +216,6 @@ public class NewsArticleService {
             return sources;
         } catch (Exception e) {
             logger.error("뉴스 소스 조회 중 오류 발생", e);
-            // 오류 발생시 기본값 반환
             List<String> defaultSources = Arrays.asList("chosun", "hankyung", "yonhapnewstv",
                 "NAVER");
             return defaultSources;
