@@ -17,7 +17,7 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @PatchMapping("")
-    public ResponseEntity<Void> updated_AllNotifications(@RequestHeader("MoNew-Request-User-ID") UUID userId){
+    public ResponseEntity<Void> updated_AllNotifications(@RequestHeader(value = "Monew-Request-User-ID", required = false) UUID userId){
             notificationService.updatedAll(userId);
 
         return ResponseEntity.noContent().build();
@@ -25,7 +25,7 @@ public class NotificationController {
 
     @PatchMapping("/{notificationId}")
     public ResponseEntity<Void> updated_Notifications(
-            @RequestHeader("MoNew-Request-User-ID") UUID userId,
+            @RequestHeader(value = "Monew-Request-User-ID", required = false) UUID userId,
             @PathVariable UUID notificationId){
             notificationService.updated(notificationId, userId);
 
@@ -35,7 +35,7 @@ public class NotificationController {
     @GetMapping("")
     public ResponseEntity<CursorPageResponse<NotificationResponse>> info_Notification(
             @ModelAttribute NotificationCursorRequest request,
-            @RequestHeader("MoNew-Request-User-ID") UUID userId
+            @RequestHeader(value = "Monew-Request-User-ID", required = false) UUID userId
             ){
 
         CursorPageResponse<NotificationResponse> result = notificationService.getNoConfirmedNotifications(userId, request);

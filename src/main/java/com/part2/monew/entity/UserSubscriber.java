@@ -15,7 +15,7 @@ import java.util.UUID;
 @Entity
 @Getter
 @Setter
-@Table(name = "user_subscribes", uniqueConstraints = {
+@Table(name = "users_subscribes", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"user_id", "interest_id"})
 })
 public class UserSubscriber {
