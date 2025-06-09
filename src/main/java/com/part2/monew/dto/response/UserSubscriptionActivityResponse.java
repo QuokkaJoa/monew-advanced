@@ -23,20 +23,19 @@ public class UserSubscriptionActivityResponse {
   private Long interestSubscriberCount;
   private Timestamp createdAt;
 
-  public static UserSubscriptionActivityResponse of(UserSubscriber subscriber) {
-    Interest interest = subscriber.getInterest();
+  public static UserSubscriptionActivityResponse of(Interest interest) {
     List<String> keywordNames = interest.getInterestKeywords().stream()
         .map(InterestKeyword::getKeyword)
         .map(Keyword::getName)
         .collect(Collectors.toList());
 
     return UserSubscriptionActivityResponse.builder()
-        .id(subscriber.getId())
         .interestId(interest.getId())
         .interestName(interest.getName())
         .interestKeywords(keywordNames)
         .interestSubscriberCount(interest.getSubscriberCount().longValue())
-        .createdAt(subscriber.getCreatedAt())
+        .createdAt(interest.getCreatedAt())
         .build();
   }
+
 }
