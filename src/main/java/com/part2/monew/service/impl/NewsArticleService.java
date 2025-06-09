@@ -90,7 +90,7 @@ public class NewsArticleService {
             // 정렬 조건에 따라 적절한 쿼리 호출
             switch (cursorDto.orderBy()) {
                 case "commentCount":
-                    logger.info("댓글 수 정렬 쿼리 호출: direction={}", cursorDto.direction());
+                    logger.info("댓글 수 정렬 QueryDSL 쿼리 호출: direction={}", cursorDto.direction());
                     articles = newsArticleRepository.findArticlesSortedByCommentCount(
                         filterDto.keyword(),
                         getFirstSource(filterDto.sourceIn()),
