@@ -21,4 +21,7 @@ public interface UserSubscriberRepository extends JpaRepository<UserSubscriber, 
 
   List<UserSubscriber> findByUser(User user);
 
+  @Query("SELECT us FROM UserSubscriber us JOIN FETCH us.interest")
+  List<UserSubscriber> findAllWithInterest();
+
 }
