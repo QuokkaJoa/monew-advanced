@@ -45,7 +45,7 @@ CREATE TABLE news_articles (
 
 -- Users Subscribers (Many-to-Many between Users and Interests)
 CREATE TABLE users_subscribes (
-                                  user_subscriber_id UUID PRIMARY KEY ,
+                                  user_subscribe_id UUID PRIMARY KEY ,
                                   user_id UUID NOT NULL,
                                   interest_id UUID NOT NULL,
                                   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
