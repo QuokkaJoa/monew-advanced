@@ -58,9 +58,6 @@ public class SimpleNewsCollectionService {
         log.info("SimpleNewsCollectionService 초기화 완료 - CategoryKeywordService 사용");
     }
 
-
-
-
     public List<NewsArticle> collectNewsWithSimpleKeywordMatching() {
         log.info("=== 간단한 키워드 매칭 뉴스 수집 시작 ===");
 
@@ -99,7 +96,6 @@ public class SimpleNewsCollectionService {
         return savedArticles;
     }
 
-
     private Map<String, List<String>> getUserInterestKeywords() {
         List<Interest> allInterests = interestRepository.findAll();
         Map<String, List<String>> interestKeywordsMap = new HashMap<>();
@@ -121,7 +117,6 @@ public class SimpleNewsCollectionService {
 
         return interestKeywordsMap;
     }
-
 
     /**
      * CategoryKeywordService를 사용하여 키워드 확장
@@ -313,7 +308,6 @@ public class SimpleNewsCollectionService {
         return matchedRssArticles;
     }
 
-
     private List<NewsArticle> filterByKeywordMatching(List<NewsArticle> articles,
         Map<String, List<String>> interestKeywordsMap) {
         log.info("키워드 매칭 필터링 시작: {}개 기사", articles.size());
@@ -348,9 +342,8 @@ public class SimpleNewsCollectionService {
         return false;
     }
 
-
     private boolean containsKeywordInContent(NewsArticle article, Set<String> keywords) {
-        // 현재는 summary를 본문으로 사용 (실제로는 full content를 가져와야 함)
+        // 현재는 summary를 본문으로 사용
         String content = article.getSummary() != null ? article.getSummary().toLowerCase() : "";
 
         for (String keyword : keywords) {
@@ -360,7 +353,6 @@ public class SimpleNewsCollectionService {
         }
         return false;
     }
-
 
     private boolean containsAnyKeyword(NewsArticle article, Set<String> keywords) {
         String title = article.getTitle() != null ? article.getTitle().toLowerCase() : "";
@@ -384,7 +376,6 @@ public class SimpleNewsCollectionService {
             .publishedDate(dto.getPublishedDate())
             .summary(dto.getSummaryOrContent()).viewCount(0L).build()).collect(Collectors.toList());
     }
-
 
     private List<NewsArticle> saveUniqueArticles(List<NewsArticle> articles) {
         if (articles.isEmpty()) {
@@ -420,7 +411,6 @@ public class SimpleNewsCollectionService {
         return new ArrayList<>();
     }
 
-
     private void saveInterestMappings(List<NewsArticle> savedArticles,
         Map<String, List<String>> interestKeywordsMap) {
         log.info("관심사 매핑 시작: {}개 기사", savedArticles.size());
@@ -453,7 +443,6 @@ public class SimpleNewsCollectionService {
 
         log.info("관심사 매핑 완료: {}개", totalMappings);
     }
-
 
     private void performS3Backup(List<NewsArticle> savedArticles) {
         try {
