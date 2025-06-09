@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -63,6 +64,7 @@ public class SimpleNewsCollectionService {
         log.info("SimpleNewsCollectionService 초기화 완료 - CategoryKeywordService 사용");
     }
 
+    @Transactional
     public List<NewsArticle> collectNewsWithSimpleKeywordMatching() {
         log.info("=== 간단한 키워드 매칭 뉴스 수집 시작 ===");
 
@@ -81,7 +83,7 @@ public class SimpleNewsCollectionService {
 
         List<NewsArticle> matchedArticles = new ArrayList<>();
 
-        // API 방식 수집 (2단계 필터링)
+        // API 방식 수집
         matchedArticles.addAll(collectFromApiWithSmartFilter(allKeywords));
 
         // RSS 방식 수집 활성화
@@ -102,8 +104,8 @@ public class SimpleNewsCollectionService {
     }
 
     private Map<String, List<String>> getUserInterestKeywords() {
-        // 실제 사용자들이 구독한 관심사만 가져오기
-        List<UserSubscriber> subscribedInterests = userSubscriberRepository.findAll();
+        // 실제 사용자들이 구독한 관심사만 가져오기 (JOIN FETCH로 lazy loading 문제 해결)
+        List<UserSubscriber> subscribedInterests = userSubscriberRepository.findAllWithInterest();
         Map<String, List<String>> interestKeywordsMap = new HashMap<>();
         Set<String> processedInterests = new HashSet<>();
 
@@ -119,7 +121,6 @@ public class SimpleNewsCollectionService {
 
             List<String> originalKeywords = interestKeywordRepository.findKeywordsByInterestName(interestName);
             if (!originalKeywords.isEmpty()) {
-                // CategoryKeywordService로 키워드 확장
                 Set<String> expandedKeywords = expandKeywordsWithCategoryService(originalKeywords);
                 interestKeywordsMap.put(interestName, new ArrayList<>(expandedKeywords));
 
@@ -139,9 +140,7 @@ public class SimpleNewsCollectionService {
         return interestKeywordsMap;
     }
 
-    /**
-     * CategoryKeywordService를 사용하여 키워드 확장
-     */
+   
     private Set<String> expandKeywordsWithCategoryService(List<String> originalKeywords) {
         Set<String> expandedKeywords = new HashSet<>(originalKeywords); // 원본 키워드 포함
 
@@ -158,6 +157,93 @@ public class SimpleNewsCollectionService {
         }
 
         return expandedKeywords;
+    }
+
+    /**
+     * 키워드에 따라 관련 RSS 프로바이더만 선택적으로 필터링 (CategoryKeywordService 활용)
+     */
+    private Map<String, NewsProviderProperties.ProviderConfig> selectRelevantRssProviders(Set<String> keywords) {
+        Map<String, NewsProviderProperties.ProviderConfig> allRssProviders = newsProviderProperties.getProviders()
+            .entrySet().stream()
+            .filter(entry -> "rss".equals(entry.getValue().getType()) && entry.getValue().isEnabled())
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        // CategoryKeywordService를 사용하여 키워드와 매칭되는 카테고리 찾기
+        Set<String> matchedCategories = new HashSet<>();
+        for (String keyword : keywords) {
+            for (String category : categoryKeywordService.getAllCategories()) {
+                if (categoryKeywordService.isKeywordInCategory(keyword, category)) {
+                    matchedCategories.add(category);
+                    log.debug("키워드 '{}' → 카테고리 '{}' 매칭", keyword, category);
+                }
+            }
+        }
+
+        log.info("키워드 매칭된 카테고리: {}", matchedCategories);
+
+        // 매칭된 카테고리에 해당하는 RSS 프로바이더만 필터링
+        Map<String, NewsProviderProperties.ProviderConfig> filteredProviders = new HashMap<>();
+        for (Map.Entry<String, NewsProviderProperties.ProviderConfig> entry : allRssProviders.entrySet()) {
+            String providerKey = entry.getKey().toLowerCase();
+            String providerName = entry.getValue().getName().toLowerCase();
+            
+            if (matchedCategories.isEmpty()) {
+                // 매칭된 카테고리가 없으면 일반 뉴스만 (headline, latest, all-news)
+                if (providerKey.contains("headline") || providerKey.contains("latest") || providerKey.contains("all-news")) {
+                    filteredProviders.put(entry.getKey(), entry.getValue());
+                }
+            } else {
+                // CategoryKeywordService의 카테고리에 맞춰서 RSS 프로바이더 매핑
+                for (String category : matchedCategories) {
+                    boolean shouldInclude = false;
+                    
+                    switch (category) {
+                        case "농구", "야구", "축구", "배구", "테니스", "골프", "수영", "기타스포츠":
+                            shouldInclude = providerKey.contains("sports") || providerName.contains("스포츠");
+                            break;
+                        case "경제":
+                            shouldInclude = providerKey.contains("economy") || providerKey.contains("finance") || 
+                                           providerName.contains("경제") || providerName.contains("증권");
+                            break;
+                        case "정치":
+                            shouldInclude = providerKey.contains("politics") || providerName.contains("정치");
+                            break;
+                        case "IT":
+                            shouldInclude = providerKey.contains("it") || providerName.contains("IT");
+                            break;
+                        case "사회":
+                            shouldInclude = providerKey.contains("society") || providerKey.contains("life") || 
+                                           providerName.contains("사회") || providerName.contains("생활");
+                            break;
+                        default:
+                            // culture나 기타 카테고리
+                            shouldInclude = providerKey.contains("culture") || providerKey.contains("entertainment") ||
+                                           providerName.contains("문화") || providerName.contains("연예");
+                            break;
+                    }
+                    
+                    if (shouldInclude) {
+                        filteredProviders.put(entry.getKey(), entry.getValue());
+                        log.debug("RSS 매칭: '{}' → '{}'", category, entry.getValue().getName());
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 최소 3개 이상의 RSS 소스 확보 (다양성 위해)
+        if (filteredProviders.size() < 3) {
+            log.info("관련 RSS가 {}개뿐이므로 일반 뉴스 RSS 추가", filteredProviders.size());
+            for (Map.Entry<String, NewsProviderProperties.ProviderConfig> entry : allRssProviders.entrySet()) {
+                String providerKey = entry.getKey().toLowerCase();
+                if (providerKey.contains("headline") || providerKey.contains("latest") || providerKey.contains("all")) {
+                    filteredProviders.put(entry.getKey(), entry.getValue());
+                    if (filteredProviders.size() >= 5) break; // 최대 5개로 제한
+                }
+            }
+        }
+
+        return filteredProviders;
     }
 
     /**
@@ -255,18 +341,17 @@ public class SimpleNewsCollectionService {
     }
 
     private List<NewsArticle> collectFromRssWithSmartFilter(Set<String> keywords) {
-        log.info("-- RSS 방식 뉴스 수집 (빠른 처리) --");
+        log.info("-- RSS 방식 뉴스 수집 (스마트 카테고리 매칭) --");
 
         List<NewsArticle> allRssArticles = new ArrayList<>();
 
-        // 활성화된 RSS 프로바이더만 필터링 (제한 해제 - 모든 RSS 소스 사용)
-        Map<String, NewsProviderProperties.ProviderConfig> enabledRssProviders = newsProviderProperties.getProviders()
-            .entrySet().stream().filter(
-                entry -> "rss".equals(entry.getValue().getType()) && entry.getValue().isEnabled())
-            .limit(15) // 최대 15개 RSS 소스로 확대 (34개 중 성능 고려)
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        // 키워드에 따라 관련 RSS 프로바이더만 선택적으로 필터링
+        Map<String, NewsProviderProperties.ProviderConfig> relevantRssProviders = selectRelevantRssProviders(keywords);
 
-        log.info("활성화된 RSS 프로바이더: {}개 (다양한 언론사)", enabledRssProviders.size());
+        log.info("키워드 {}에 맞는 관련 RSS 프로바이더: {}개", keywords, relevantRssProviders.size());
+        relevantRssProviders.forEach((key, config) -> 
+            log.info("  - {}: {}", key, config.getName())
+        );
 
         // RSS Provider 찾기
         NewsProvider rssProvider = newsProviders.stream()
@@ -279,7 +364,7 @@ public class SimpleNewsCollectionService {
         }
 
         // 각 RSS 소스별로 빠른 수집 (시간 제한)
-        for (Map.Entry<String, NewsProviderProperties.ProviderConfig> entry : enabledRssProviders.entrySet()) {
+        for (Map.Entry<String, NewsProviderProperties.ProviderConfig> entry : relevantRssProviders.entrySet()) {
             String providerKey = entry.getKey();
             NewsProviderProperties.ProviderConfig config = entry.getValue();
 
