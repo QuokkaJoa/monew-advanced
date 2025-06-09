@@ -45,7 +45,13 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public CursorResponse findCommentsByArticleId(CommentRequest commentRequest) {
 
-        List<CommentsManagement> commentsManagements = commentRepository.findCommentsByArticleId(commentRequest.getArticleId(), commentRequest.getAfter(), commentRequest.getLimit());
+        List<CommentsManagement> commentsManagements = commentRepository.findCommentsByArticleId(
+            commentRequest.getArticleId(), 
+            commentRequest.getAfter(), 
+            commentRequest.getLimit(),
+            commentRequest.getOrderBy(),
+            commentRequest.getDirection()
+        );
 
         Long totalElements = commentRepository.totalCount(commentRequest.getArticleId());
 
@@ -69,6 +75,10 @@ public class CommentServiceImpl implements CommentService {
         CommentsManagement comment = CommentsManagement.create(user, article, requeset.getContent(), 0);
 
         CommentsManagement saveComment = commentRepository.saveAndFlush(comment);
+
+        // 뉴스 기사 댓글 수 증가
+        article.incrementCommentCount();
+        articleRepository.save(article);
 
         return CommentResponse.of(saveComment);
 
@@ -146,6 +156,11 @@ public class CommentServiceImpl implements CommentService {
     public void deleteComment(UUID id) {
         CommentsManagement commentsManagement = commentRepository.findById(id)
                 .orElseThrow(CommentNotFoundException::new);
+
+        // 뉴스 기사 댓글 수 감소
+        NewsArticle article = commentsManagement.getNewsArticle();
+        article.decrementCommentCount();
+        articleRepository.save(article);
 
         commentsManagement.delete();
 

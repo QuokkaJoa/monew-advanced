@@ -1,6 +1,8 @@
 package com.part2.monew.repository;
 
 import com.part2.monew.entity.CommentsManagement;
+import com.querydsl.core.types.Order;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -21,7 +23,7 @@ public class CommentRepositoryCustomImpl implements CommentRepositoryCustom {
     }
 
     @Override
-    public List<CommentsManagement> findCommentsByArticleId(UUID articleId, Timestamp after, int limit) {
+    public List<CommentsManagement> findCommentsByArticleId(UUID articleId, Timestamp after, int limit, String orderBy, String direction) {
         return queryFactory
                 .selectFrom(commentsManagement)
                 .join(commentsManagement.user, user).fetchJoin()
@@ -31,7 +33,7 @@ public class CommentRepositoryCustomImpl implements CommentRepositoryCustom {
                         commentsManagement.active.isTrue(),
                         ltCreatedAt(after)
                 )
-                .orderBy(commentsManagement.createdAt.desc())
+                .orderBy(getOrderSpecifier(orderBy, direction))
                 .limit(limit + 1)
                 .fetch();
     }
@@ -48,6 +50,25 @@ public class CommentRepositoryCustomImpl implements CommentRepositoryCustom {
 
     private BooleanExpression ltCreatedAt(Timestamp after) {
         return after != null ? commentsManagement.createdAt.lt(after) : null;
+    }
+
+    private OrderSpecifier<?> getOrderSpecifier(String orderBy, String direction) {
+        Order order = "ASC".equalsIgnoreCase(direction) ? Order.ASC : Order.DESC;
+        
+        if (orderBy == null || orderBy.trim().isEmpty()) {
+            orderBy = "createdAt"; // 기본값
+        }
+        
+        switch (orderBy.toLowerCase()) {
+            case "createdat":
+            case "created_at":
+                return new OrderSpecifier<>(order, commentsManagement.createdAt);
+            case "likecount":
+            case "like_count":
+                return new OrderSpecifier<>(order, commentsManagement.likeCount);
+            default:
+                return new OrderSpecifier<>(Order.DESC, commentsManagement.createdAt);
+        }
     }
 
     @Override
