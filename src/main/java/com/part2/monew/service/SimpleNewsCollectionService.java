@@ -5,9 +5,11 @@ import com.part2.monew.dto.request.NewsArticleDto;
 import com.part2.monew.entity.Interest;
 import com.part2.monew.entity.InterestNewsArticle;
 import com.part2.monew.entity.NewsArticle;
+import com.part2.monew.entity.UserSubscriber;
 import com.part2.monew.repository.InterestKeywordRepository;
 import com.part2.monew.repository.InterestNewsArticleRepository;
 import com.part2.monew.repository.InterestRepository;
+import com.part2.monew.repository.UserSubscriberRepository;
 import com.part2.monew.service.impl.NewsArticleService;
 import com.part2.monew.service.impl.NewsCrawlingApiServiceImpl;
 import com.part2.monew.service.newsprovider.NewsProvider;
@@ -34,6 +36,7 @@ public class SimpleNewsCollectionService {
     private final InterestRepository interestRepository;
     private final InterestKeywordRepository interestKeywordRepository;
     private final InterestNewsArticleRepository interestNewsArticleRepository;
+    private final UserSubscriberRepository userSubscriberRepository;
     private final NewsProviderProperties newsProviderProperties;
     private final List<NewsProvider> newsProviders;
     private final NewsBackupS3Manager newsBackupS3Manager;
@@ -43,6 +46,7 @@ public class SimpleNewsCollectionService {
         NewsArticleService newsArticleService, InterestRepository interestRepository,
         InterestKeywordRepository interestKeywordRepository,
         InterestNewsArticleRepository interestNewsArticleRepository,
+        UserSubscriberRepository userSubscriberRepository,
         NewsProviderProperties newsProviderProperties, List<NewsProvider> newsProviders,
         NewsBackupS3Manager newsBackupS3Manager, CategoryKeywordService categoryKeywordService) {
         this.newsCrawlingService = newsCrawlingService;
@@ -50,6 +54,7 @@ public class SimpleNewsCollectionService {
         this.interestRepository = interestRepository;
         this.interestKeywordRepository = interestKeywordRepository;
         this.interestNewsArticleRepository = interestNewsArticleRepository;
+        this.userSubscriberRepository = userSubscriberRepository;
         this.newsProviderProperties = newsProviderProperties;
         this.newsProviders = newsProviders;
         this.newsBackupS3Manager = newsBackupS3Manager;
@@ -97,22 +102,38 @@ public class SimpleNewsCollectionService {
     }
 
     private Map<String, List<String>> getUserInterestKeywords() {
-        List<Interest> allInterests = interestRepository.findAll();
+        // 실제 사용자들이 구독한 관심사만 가져오기
+        List<UserSubscriber> subscribedInterests = userSubscriberRepository.findAll();
         Map<String, List<String>> interestKeywordsMap = new HashMap<>();
+        Set<String> processedInterests = new HashSet<>();
 
-        for (Interest interest : allInterests) {
-            List<String> originalKeywords = interestKeywordRepository.findKeywordsByInterestName(
-                interest.getName());
+        for (UserSubscriber subscription : subscribedInterests) {
+            Interest interest = subscription.getInterest();
+            String interestName = interest.getName();
+            
+            // 중복 처리 방지
+            if (processedInterests.contains(interestName)) {
+                continue;
+            }
+            processedInterests.add(interestName);
+
+            List<String> originalKeywords = interestKeywordRepository.findKeywordsByInterestName(interestName);
             if (!originalKeywords.isEmpty()) {
                 // CategoryKeywordService로 키워드 확장
                 Set<String> expandedKeywords = expandKeywordsWithCategoryService(originalKeywords);
-                interestKeywordsMap.put(interest.getName(), new ArrayList<>(expandedKeywords));
+                interestKeywordsMap.put(interestName, new ArrayList<>(expandedKeywords));
 
-                log.info("관심사 '{}': {}개 → {}개 키워드 확장", interest.getName(), originalKeywords.size(),
+                log.info("구독된 관심사 '{}': {}개 → {}개 키워드 확장", interestName, originalKeywords.size(),
                     expandedKeywords.size());
                 log.info("  원본: {}", originalKeywords);
                 log.info("  확장: {}", expandedKeywords);
             }
+        }
+
+        if (interestKeywordsMap.isEmpty()) {
+            log.warn("구독된 관심사가 없습니다. 아무도 관심사를 구독하지 않았습니다.");
+        } else {
+            log.info("총 {}개의 구독된 관심사에서 키워드 확장", interestKeywordsMap.size());
         }
 
         return interestKeywordsMap;
