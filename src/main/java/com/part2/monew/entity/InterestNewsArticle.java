@@ -25,11 +25,11 @@ public class InterestNewsArticle {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "interests_id", nullable = false)
+    @JoinColumn(name = "interest_id", nullable = false)
     private Interest interest;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "news_articles_id", nullable = false)
+    @JoinColumn(name = "news_article_id", nullable = false)
     private NewsArticle newsArticle;
 
     @CreationTimestamp

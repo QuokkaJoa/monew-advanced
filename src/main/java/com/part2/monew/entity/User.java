@@ -44,7 +44,7 @@ public class User {
     private Timestamp updatedAt;
 
     @OneToMany(mappedBy = "user")
-    private List<UserSubscriber> Usersubscribe;
+    private List<UserSubscriber> userSubscribe;
 
     @OneToMany(mappedBy = "user")
     private List<CommentLike> commentLikes;
@@ -53,7 +53,7 @@ public class User {
     private List<CommentsManagement> commentManagement;
 
     @OneToMany(mappedBy = "user")
-    private List<ActivityDetail> activitiyDetail;
+    private List<ActivityDetail> activityDetail;
 
     @OneToMany(mappedBy = "user")
     private List<Notification> notification;
