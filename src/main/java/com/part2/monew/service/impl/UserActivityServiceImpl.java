@@ -29,7 +29,7 @@ public class UserActivityServiceImpl implements UserActivityService {
     User user = userRepository.findByIdAndActiveTrue(userId)
         .orElseThrow(UserNotFoundException::new);
 
-    List<UserSubscriptionActivityResponse> subscriptions = userSubscriberRepository.findByUser(user).stream()
+    List<UserSubscriptionActivityResponse> subscriptions = userSubscriberRepository.findSubscriptionsByUser(user).stream()
         .map(UserSubscriptionActivityResponse::of)
         .toList();
 
