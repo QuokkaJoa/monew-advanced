@@ -121,10 +121,10 @@ class UserActivityServiceImplTest {
 
     // given
     when(userRepository.findByIdAndActiveTrue(userId)).thenReturn(Optional.of(mockUser));
-    when(userSubscriberRepository.findSubscriptionsByUser(mockUser)).thenReturn(List.of(subscriber));
+    when(userSubscriberRepository.findInterestsByUser(mockUser)).thenReturn(List.of(interest));
     when(commentRepository.findTop10RecentCommentsByUserId(userId)).thenReturn(List.of(comment));
     when(commentLikeRepository.findTop10ByUser_IdOrderByCreatedAtDesc(userId)).thenReturn(List.of(commentLike));
-    when(activityDetailRepository.findTop10ByUserAndNewsArticleIsNotNullOrderByViewedAtDesc(mockUser)).thenReturn(List.of(articleView));
+    when(activityDetailRepository.findRecentViewedArticlesByUser(mockUser)).thenReturn(List.of(articleView));
 
     // when
     UserActivityResponse response = userActivityService.getUserActivity(userId);
@@ -159,10 +159,10 @@ class UserActivityServiceImplTest {
 
     // verify
     verify(userRepository).findByIdAndActiveTrue(userId);
-    verify(userSubscriberRepository).findSubscriptionsByUser(mockUser);
+    verify(userSubscriberRepository).findInterestsByUser(mockUser);
     verify(commentRepository).findTop10RecentCommentsByUserId(userId);
     verify(commentLikeRepository).findTop10ByUser_IdOrderByCreatedAtDesc(userId);
-    verify(activityDetailRepository).findTop10ByUserAndNewsArticleIsNotNullOrderByViewedAtDesc(mockUser);
+    verify(activityDetailRepository).findRecentViewedArticlesByUser(mockUser);
   }
 
   @Test
