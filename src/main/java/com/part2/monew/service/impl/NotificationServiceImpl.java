@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -73,16 +74,16 @@ public class NotificationServiceImpl implements NotificationService {
         Timestamp cursorTs = null;
         if (request.cursor() != null) {
             try {
-                cursorTs = Timestamp.valueOf(request.cursor());
+                cursorTs = Timestamp.from(Instant.parse(request.cursor()));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
 
         if (cursorTs == null) {
-            notifications = notificationRepository.findTop11ByUserIdAndConfirmedFalseOrderByCreatedAtDesc(userId);
+            notifications = notificationRepository.findTop51ByUserIdAndConfirmedFalseOrderByCreatedAtDesc(userId);
         } else {
-            notifications = notificationRepository.findTop11ByUserIdAndConfirmedFalseAndCreatedAtLessThanOrderByCreatedAtDesc(userId, cursorTs);
+            notifications = notificationRepository.findTop51ByUserIdAndConfirmedFalseAndCreatedAtLessThanOrderByCreatedAtDesc(userId, cursorTs);
         }
 
         boolean hasNext = notifications.size() == limitPlusOne;

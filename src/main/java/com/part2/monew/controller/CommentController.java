@@ -24,10 +24,11 @@ public class CommentController {
 
     @GetMapping
     public ResponseEntity<CursorResponse> findCommentsByArticleId(
-            @Validated @ModelAttribute CommentRequest commentRequest
+            @Validated @ModelAttribute CommentRequest commentRequest,
+            @RequestHeader("Monew-Request-User-ID") UUID userId
     ) {
 
-        return ResponseEntity.status(HttpStatus.OK).body(commentService.findCommentsByArticleId(commentRequest));
+        return ResponseEntity.status(HttpStatus.OK).body(commentService.findCommentsByArticleId(commentRequest, userId));
     }
 
     @PostMapping
