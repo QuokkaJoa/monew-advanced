@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -73,7 +74,7 @@ public class NotificationServiceImpl implements NotificationService {
         Timestamp cursorTs = null;
         if (request.cursor() != null) {
             try {
-                cursorTs = Timestamp.valueOf(request.cursor());
+                cursorTs = Timestamp.from(Instant.parse(request.cursor()));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
