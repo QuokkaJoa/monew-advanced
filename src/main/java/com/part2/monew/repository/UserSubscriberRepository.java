@@ -1,5 +1,6 @@
 package com.part2.monew.repository;
 
+import com.part2.monew.entity.Interest;
 import com.part2.monew.entity.User;
 import com.part2.monew.entity.UserSubscriber;
 import java.util.List;
@@ -19,7 +20,8 @@ public interface UserSubscriberRepository extends JpaRepository<UserSubscriber, 
   @Query("SELECT us.interest.id FROM UserSubscriber us WHERE us.user.id = :userId AND us.interest.id IN :interestIds")
   Set<UUID> findSubscribedInterestIdsByUserIdAndInterestIdsIn(@Param("userId") UUID userId, @Param("interestIds") List<UUID> interestIds);
 
-  List<UserSubscriber> findByUser(User user);
+  @Query("SELECT us.interest FROM UserSubscriber us WHERE us.user = :user")
+  List<Interest> findInterestsByUser(@Param("user") User user);
 
   @Query("SELECT us FROM UserSubscriber us JOIN FETCH us.interest")
   List<UserSubscriber> findAllWithInterest();

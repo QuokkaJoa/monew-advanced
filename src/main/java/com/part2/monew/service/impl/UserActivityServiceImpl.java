@@ -29,7 +29,7 @@ public class UserActivityServiceImpl implements UserActivityService {
     User user = userRepository.findByIdAndActiveTrue(userId)
         .orElseThrow(UserNotFoundException::new);
 
-    List<UserSubscriptionActivityResponse> subscriptions = userSubscriberRepository.findByUser(user).stream()
+    List<UserSubscriptionActivityResponse> subscriptions = userSubscriberRepository.findInterestsByUser(user).stream()
         .map(UserSubscriptionActivityResponse::of)
         .toList();
 
@@ -43,7 +43,8 @@ public class UserActivityServiceImpl implements UserActivityService {
         .toList();
 
     List<UserArticleViewsActivityDto> articleViews = activityDetailRepository
-        .findTop10ByUserAndNewsArticleIsNotNullOrderByViewedAtDesc(user).stream()
+        .findRecentViewedArticlesByUser(user).stream()
+        .limit(10)
         .map(UserArticleViewsActivityDto::of)
         .toList();
 
