@@ -77,14 +77,17 @@ public class NewsArticleService {
         logger.info("뉴스 기사 조회 요청 - 사용자 ID: {}, 필터: {}, 커서: {}", userId, filterDto, cursorDto);
 
         List<NewsArticle> articles;
+        
+        // limit이 0 이하인 경우 기본값 20으로 설정
+        int effectiveLimit = cursorDto.limit() > 0 ? cursorDto.limit() : 20;
 
         try {
             // 커서 기반 페이징을 위해 limit+1로 조회
-            int fetchLimit = cursorDto.limit() + 1;
+            int fetchLimit = effectiveLimit + 1;
             
-            logger.info("검색 시작 - keyword: {}, source: {}, orderBy: {}, direction: {}, cursor: {}",
+            logger.info("검색 시작 - keyword: {}, source: {}, orderBy: {}, direction: {}, cursor: {}, effectiveLimit: {}",
                 filterDto.keyword(), getFirstSource(filterDto.sourceIn()), 
-                cursorDto.orderBy(), cursorDto.direction(), cursorDto.cursor());
+                cursorDto.orderBy(), cursorDto.direction(), cursorDto.cursor(), effectiveLimit);
 
 
             // 정렬 조건에 따라 적절한 쿼리 호출
@@ -136,14 +139,14 @@ public class NewsArticleService {
         }
 
         // 커서 기반 페이징 처리
-        boolean hasNext = articles.size() > cursorDto.limit();
+        boolean hasNext = articles.size() > effectiveLimit;
         String nextCursor = null;
         Timestamp nextAfter = null;
         Long nextCursorViewCount = null;
 
         // hasNext가 true면 마지막 요소는 다음 페이지 표시용이므로 제거
         if (hasNext) {
-            articles = articles.subList(0, cursorDto.limit());
+            articles = articles.subList(0, effectiveLimit);
         }
 
         List<UUID> articleIds = articles.stream().map(NewsArticle::getId).collect(Collectors.toList());
