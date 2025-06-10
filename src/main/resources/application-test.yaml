@@ -36,7 +36,7 @@ monew:
       clientId: 7TUbEIvoUgYFrFmQEuEd
       clientSecret: Lfz7vkUhfy
   storage:
-    type: local
+    type: s3
     local:
       rootPath: ./monew-storage
     s3:

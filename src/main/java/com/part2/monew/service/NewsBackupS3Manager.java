@@ -66,4 +66,10 @@ public class NewsBackupS3Manager {
             throw new RuntimeException("S3 백업 다운로드 실패: " + s3Key, e);
         }
     }
+
+    public String getLatestBackupKey() {
+        // 오늘 날짜로 백업 파일 키 생성 (어제 데이터가 들어있음)
+        LocalDate today = LocalDate.now();
+        return getBackupFileKey(today);
+    }
 } 

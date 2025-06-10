@@ -14,6 +14,7 @@ import com.part2.monew.entity.NewsArticle;
 import com.part2.monew.entity.User;
 import com.part2.monew.global.exception.article.ArticleDeleteFailedException;
 import com.part2.monew.global.exception.article.ArticleNotFoundException;
+import com.part2.monew.global.exception.article.ArticleRestoreFailedException;
 import com.part2.monew.global.exception.article.ArticleSearchFailedException;
 import com.part2.monew.global.exception.user.UserNotFoundException;
 import com.part2.monew.mapper.NewsArticleMapper;
@@ -82,7 +83,6 @@ public class NewsArticleService {
         int effectiveLimit = cursorDto.limit() > 0 ? cursorDto.limit() : 20;
 
         try {
-            // 커서 기반 페이징을 위해 limit+1로 조회
             int fetchLimit = effectiveLimit + 1;
             
             logger.info("검색 시작 - keyword: {}, source: {}, orderBy: {}, direction: {}, cursor: {}, effectiveLimit: {}",
@@ -90,7 +90,6 @@ public class NewsArticleService {
                 cursorDto.orderBy(), cursorDto.direction(), cursorDto.cursor(), effectiveLimit);
 
 
-            // 정렬 조건에 따라 적절한 쿼리 호출
             switch (cursorDto.orderBy()) {
                 case "commentCount":
                     logger.info("댓글 수 정렬 QueryDSL 쿼리 호출: direction={}", cursorDto.direction());
@@ -187,11 +186,13 @@ public class NewsArticleService {
 
         // 응답 DTO 변환 (실제 댓글 수 포함)
         Map<UUID, Boolean> viewedStatusMap = Collections.emptyMap();
-        List<NewsArticleResponseDto> responseDtos = articles.stream().map(article -> {
-            Long actualCommentCount = commentCountMap.getOrDefault(article.getId(), 0L);
-            return newsArticleMapper.toDto(article,
-                viewedStatusMap.getOrDefault(article.getId(), false), actualCommentCount);
-        }).collect(Collectors.toList());
+        List<NewsArticleResponseDto> responseDtos = articles.stream()
+            .map(article -> {
+                Long actualCommentCount = commentCountMap.getOrDefault(article.getId(), 0L);
+                return newsArticleMapper.toDto(article,
+                    viewedStatusMap.getOrDefault(article.getId(), false), actualCommentCount);
+            })
+            .collect(Collectors.toList());
 
         return PaginatedResponseDto.<NewsArticleResponseDto>builder()
             .content(responseDtos)
@@ -387,6 +388,59 @@ public class NewsArticleService {
 
         logger.info("데이터 복구 완료: 총 {}개 기사 복구됨. 기간: {} ~ {}", restoredArticles.size(), fromDate,
             toDate);
+    }
+
+    @Transactional
+    public int restoreFromLatestBackup() {
+        logger.info("최신 백업에서 삭제된 기사 복구 시작");
+        
+        try {
+            String latestBackupKey = newsBackupS3Manager.getLatestBackupKey();
+            int restoredCount = 0;
+            
+            try (InputStream backupStream = newsBackupS3Manager.downloadNewsBackup(latestBackupKey)) {
+                if (backupStream == null) {
+                    logger.warn("최신 백업 파일이 S3에 없습니다. Key: {}", latestBackupKey);
+                    return 0;
+                }
+
+                List<NewsArticle> articlesFromBackup = objectMapper.readValue(backupStream,
+                    new TypeReference<List<NewsArticle>>() {
+                    });
+
+                if (articlesFromBackup != null && !articlesFromBackup.isEmpty()) {
+                    logger.info("최신 백업에서 {}개 기사 로드됨. Key: {}", articlesFromBackup.size(), latestBackupKey);
+                    
+                    for (NewsArticle article : articlesFromBackup) {
+                        // DB에 해당 기사가 없는지 확인 (sourceUrl 기준)
+                        if (!newsArticleRepository.existsBySourceUrl(article.getSourceUrl())) {
+                            
+                            NewsArticle newArticle = NewsArticle.builder()
+                                .sourceIn(article.getSourceIn())
+                                .sourceUrl(article.getSourceUrl())
+                                .title(article.getTitle())
+                                .publishedDate(article.getPublishedDate())
+                                .summary(article.getSummary())
+                                .viewCount(article.getViewCount())
+                                .commentCount(article.getCommentCount())
+                                .isDeleted(false) // 복구된 기사는 활성 상태
+                                .build();
+                                
+                            newsArticleRepository.save(newArticle);
+                            restoredCount++;
+                            logger.debug("복구된 기사 저장: {}", newArticle.getSourceUrl());
+                        }
+                    }
+                }
+            }
+
+            logger.info("최신 백업 복구 완료: 총 {}개 기사 복구됨. Key: {}", restoredCount, latestBackupKey);
+            return restoredCount;
+            
+        } catch (Exception e) {
+            logger.error("최신 백업 복구 중 오류 발생: {}", e.getMessage(), e);
+            throw new ArticleRestoreFailedException();
+        }
     }
 
 
