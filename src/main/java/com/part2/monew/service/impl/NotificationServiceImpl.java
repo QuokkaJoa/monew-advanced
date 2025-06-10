@@ -80,9 +80,9 @@ public class NotificationServiceImpl implements NotificationService {
         }
 
         if (cursorTs == null) {
-            notifications = notificationRepository.findTop11ByUserIdAndConfirmedFalseOrderByCreatedAtDesc(userId);
+            notifications = notificationRepository.findTop51ByUserIdAndConfirmedFalseOrderByCreatedAtDesc(userId);
         } else {
-            notifications = notificationRepository.findTop11ByUserIdAndConfirmedFalseAndCreatedAtLessThanOrderByCreatedAtDesc(userId, cursorTs);
+            notifications = notificationRepository.findTop51ByUserIdAndConfirmedFalseAndCreatedAtLessThanOrderByCreatedAtDesc(userId, cursorTs);
         }
 
         boolean hasNext = notifications.size() == limitPlusOne;
