@@ -59,7 +59,7 @@ class CommentServiceIntegrationTest {
                 .build();
 
         // when
-        CursorResponse response = commentService.findCommentsByArticleId(request);
+        CursorResponse response = commentService.findCommentsByArticleId(request, user.getId());
 
         // then
         assertThat(response.getContent()).hasSize(5);

@@ -43,18 +43,16 @@ public class CommentServiceImpl implements CommentService {
     private final NotificationService notificationService;
 
     @Override
-    public CursorResponse findCommentsByArticleId(CommentRequest commentRequest) {
+    public CursorResponse findCommentsByArticleId(CommentRequest commentRequest, UUID userId) {
 
         List<CommentsManagement> commentsManagements = commentRepository.findCommentsByArticleId(
-            commentRequest.getArticleId(), 
-            commentRequest.getAfter(), 
+            commentRequest.getArticleId(),
+            commentRequest.getAfter(),
             commentRequest.getLimit(),
-            commentRequest.getOrderBy(),
-            commentRequest.getDirection()
+            userId
         );
 
         Long totalElements = commentRepository.totalCount(commentRequest.getArticleId());
-
 
         List<CommentResponse> commentReponses = commentsManagements.stream()
                 .map(CommentResponse::of)

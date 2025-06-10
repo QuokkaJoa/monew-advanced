@@ -65,7 +65,7 @@ class CommentRepositoryTest {
         int limit = 5;
 
         // when
-        List<CommentsManagement> results = commentRepository.findCommentsByArticleId(newsArticle.getId(), null, limit);
+        List<CommentsManagement> results = commentRepository.findCommentsByArticleId(newsArticle.getId(), null, limit, user.getId());
 
         // then
         assertThat(results)

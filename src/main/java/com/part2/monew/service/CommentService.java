@@ -9,7 +9,7 @@ import com.part2.monew.dto.response.CursorResponse;
 import java.util.UUID;
 
 public interface CommentService {
-    CursorResponse findCommentsByArticleId(CommentRequest commentRequest);
+    CursorResponse findCommentsByArticleId(CommentRequest commentRequest, UUID userId);
 
     CommentResponse create(CreateCommentRequest requeset);
 

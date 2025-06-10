@@ -39,7 +39,7 @@ public class CommentResponse {
                 .userNickname(comment.getUser().getNickname())
                 .content(comment.getContent())
                 .likeCount(comment.getLikeCount())
-                .likedByMe( comment.getCommentLikes().size() > 1)
+                .likedByMe(comment.getCommentLikes() == null ? false : comment.getCommentLikes().size() > 0 ? true : false )
                 .createdAt(comment.getCreatedAt())
                 .build();
     }
