@@ -8,6 +8,7 @@ import com.part2.monew.dto.response.CursorResponse;
 import com.part2.monew.entity.CommentsManagement;
 import com.part2.monew.entity.NewsArticle;
 import com.part2.monew.entity.User;
+import com.part2.monew.mapper.InterestMapper;
 import com.part2.monew.repository.CommentLikeRepository;
 import com.part2.monew.global.exception.ErrorCode;
 import com.part2.monew.global.exception.comment.CommentLikeDuplication;
@@ -20,6 +21,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
@@ -31,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @Transactional(readOnly = true)
 class CommentServiceImplTest {
 
@@ -42,36 +46,46 @@ class CommentServiceImplTest {
 
     @Autowired
     private CommentRepository commentRepository;
+
     @Autowired
     private CommentLikeRepository commentLikeRepository;
+
+    @MockitoBean
+    private InterestMapper interestMapper;
 
     @Test
     @Transactional
     @DisplayName("기사 ID로 댓글 목록을 조회하고 CursorResponse로 반환한다.")
     void findCommentsByArticleId() {
-        // given
-        User user = new User("test@example.com", "pass123", "tester", true, Timestamp.from(Instant.now()));
+        // given: 초기 데이터 세팅
+        User user = new User(
+                "test@example.com",
+                "pass123",
+                "tester",
+                true,
+                Timestamp.from(Instant.now())
+        );
         em.persist(user);
 
-        NewsArticle article = new NewsArticle("http://url.com", "제목", Timestamp.from(Instant.now()), "요약", 0L);
+        NewsArticle article = new NewsArticle(
+                "http://url.com",
+                "제목",
+                Timestamp.from(Instant.now()),
+                "요약",
+                0L
+        );
         em.persist(article);
 
         Instant baseTime = Instant.parse("2025-06-01T00:00:00Z");
+        for (int i = 1; i <= 6; i++) {
+            CommentsManagement cm = CommentsManagement.create(
+                    user, article, "내용" + i, 0,
+                    Timestamp.from(baseTime.plus(i, ChronoUnit.HOURS))
+            );
+            em.persist(cm);
+        }
 
-        CommentsManagement cm1 = CommentsManagement.create(user, article, "내용1", 0, Timestamp.from(baseTime.plus(1, ChronoUnit.HOURS)));
-        CommentsManagement cm2 = CommentsManagement.create(user, article, "내용2", 0, Timestamp.from(baseTime.plus(2, ChronoUnit.HOURS)));
-        CommentsManagement cm3 = CommentsManagement.create(user, article, "내용3", 0, Timestamp.from(baseTime.plus(3, ChronoUnit.HOURS)));
-        CommentsManagement cm4 = CommentsManagement.create(user, article, "내용4", 0, Timestamp.from(baseTime.plus(4, ChronoUnit.HOURS)));
-        CommentsManagement cm5 = CommentsManagement.create(user, article, "내용5", 0, Timestamp.from(baseTime.plus(5, ChronoUnit.HOURS)));
-        CommentsManagement cm6 = CommentsManagement.create(user, article, "내용6", 0, Timestamp.from(baseTime.plus(6, ChronoUnit.HOURS)));
-
-        em.persist(cm1);
-        em.persist(cm2);
-        em.persist(cm3);
-        em.persist(cm4);
-        em.persist(cm5);
-        em.persist(cm6);
-
+        // 서비스가 자신의 트랜잭션을 열도록, 영속성 컨텍스트만 초기화
         em.flush();
         em.clear();
 
@@ -83,7 +97,7 @@ class CommentServiceImplTest {
                 .build();
 
         // when
-        CursorResponse response = commentService.findCommentsByArticleId(request,user.getId());
+        CursorResponse response = commentService.findCommentsByArticleId(request, user.getId());
 
         // then
         assertThat(response.getContent()).hasSize(5);

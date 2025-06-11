@@ -3,11 +3,14 @@ package com.part2.monew.repository;
 import com.part2.monew.entity.CommentsManagement;
 import com.part2.monew.entity.NewsArticle;
 import com.part2.monew.entity.User;
+import com.part2.monew.mapper.InterestMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
@@ -18,6 +21,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
+@ActiveProfiles("test")
 @Transactional(readOnly = true)
 class CommentRepositoryTest {
 
@@ -27,13 +31,25 @@ class CommentRepositoryTest {
     @Autowired
     private CommentRepository commentRepository;
 
+    @MockitoBean
+    private InterestMapper interestMapper;
+
+
+    @Autowired
+    private UserRepository userRepository;
+
     @DisplayName("게시물에 작성된 댓글을 페이지 사이즈 10~6 5개 내림차순 조회한다.")
     @Transactional
     @Test
     void findCommentsByArticleId() {
         //given
-        User user = new User("test@example.com", "password123", "tester", true, Timestamp.from(Instant.now()));
-        em.persist(user);
+        User user = User.builder()
+                .nickname("tester")
+                .email("test@example.com")
+                .password("123456")
+                .active(true).build();
+
+        userRepository.save(user);
 
         NewsArticle newsArticle = new NewsArticle("https://example.com/foo", "제목입니다", Timestamp.from(Instant.now()), "요약입니다", 0L);
         em.persist(newsArticle);
