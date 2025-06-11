@@ -103,6 +103,39 @@ public class NewsArticleRepositoryCustomImpl implements NewsArticleRepositoryCus
             .fetch();
     }
     
+    // 복합 커서를 지원하는 새로운 메서드 추가
+    public List<NewsArticle> findArticlesWithFiltersAndSortingComposite(
+            String keyword,
+            String sourceIn,
+            Timestamp publishDateFrom,
+            Timestamp publishDateTo,
+            String orderBy,
+            String direction,
+            String cursor,
+            Timestamp cursorPublishedDate,
+            int limit) {
+
+        BooleanBuilder whereCondition = buildBaseCondition(keyword, sourceIn, publishDateFrom, publishDateTo);
+        
+        // 복합 커서 조건 추가
+        if (cursor != null && !cursor.trim().isEmpty()) {
+            BooleanExpression cursorCondition = buildCompositeCursorCondition(orderBy, direction, cursor, cursorPublishedDate);
+            if (cursorCondition != null) {
+                whereCondition.and(cursorCondition);
+            }
+        }
+        
+        // 정렬 조건
+        OrderSpecifier<?>[] orderSpecifiers = buildOrderSpecifiers(orderBy, direction);
+        
+        return queryFactory
+            .selectFrom(newsArticle)
+            .where(whereCondition)
+            .orderBy(orderSpecifiers)
+            .limit(limit)
+            .fetch();
+    }
+    
     @Override
     public List<NewsArticle> findArticlesSortedByViewCount(
             String keyword,
@@ -243,6 +276,70 @@ public class NewsArticleRepositoryCustomImpl implements NewsArticleRepositoryCus
                     return "DESC".equalsIgnoreCase(direction)
                         ? newsArticle.commentCount.lt(cursorCommentCount)
                         : newsArticle.commentCount.gt(cursorCommentCount);
+                        
+                default:
+                    return null;
+            }
+        } catch (Exception e) {
+            log.warn("Invalid cursor format: {}", cursor, e);
+            return null;
+        }
+    }
+    
+    // 복합 커서 조건을 사용하는 새로운 메서드 추가
+    private BooleanExpression buildCompositeCursorCondition(String orderBy, String direction, 
+                                                          String cursor, Timestamp cursorPublishedDate) {
+        try {
+            switch (orderBy) {
+                case "publishDate":
+                    Timestamp cursorDate = Timestamp.valueOf(cursor);
+                    return "DESC".equalsIgnoreCase(direction) 
+                        ? newsArticle.publishedDate.lt(cursorDate)
+                        : newsArticle.publishedDate.gt(cursorDate);
+                        
+                case "viewCount":
+                    Long cursorViewCount = Long.parseLong(cursor);
+                    BooleanExpression viewCountCondition;
+                    BooleanExpression publishDateCondition;
+                    
+                    if ("DESC".equalsIgnoreCase(direction)) {
+                        // viewCount가 더 작거나, 같으면서 publishedDate가 더 작은 경우
+                        viewCountCondition = newsArticle.viewCount.lt(cursorViewCount);
+                        publishDateCondition = newsArticle.viewCount.eq(cursorViewCount)
+                            .and(cursorPublishedDate != null ? 
+                                newsArticle.publishedDate.lt(cursorPublishedDate) : null);
+                    } else {
+                        // viewCount가 더 크거나, 같으면서 publishedDate가 더 큰 경우
+                        viewCountCondition = newsArticle.viewCount.gt(cursorViewCount);
+                        publishDateCondition = newsArticle.viewCount.eq(cursorViewCount)
+                            .and(cursorPublishedDate != null ? 
+                                newsArticle.publishedDate.gt(cursorPublishedDate) : null);
+                    }
+                    
+                    return publishDateCondition != null ? 
+                        viewCountCondition.or(publishDateCondition) : viewCountCondition;
+                        
+                case "commentCount":
+                    Long cursorCommentCount = Long.parseLong(cursor);
+                    BooleanExpression commentCountCondition;
+                    BooleanExpression commentPublishDateCondition;
+                    
+                    if ("DESC".equalsIgnoreCase(direction)) {
+                        // commentCount가 더 작거나, 같으면서 publishedDate가 더 작은 경우
+                        commentCountCondition = newsArticle.commentCount.lt(cursorCommentCount);
+                        commentPublishDateCondition = newsArticle.commentCount.eq(cursorCommentCount)
+                            .and(cursorPublishedDate != null ? 
+                                newsArticle.publishedDate.lt(cursorPublishedDate) : null);
+                    } else {
+                        // commentCount가 더 크거나, 같으면서 publishedDate가 더 큰 경우
+                        commentCountCondition = newsArticle.commentCount.gt(cursorCommentCount);
+                        commentPublishDateCondition = newsArticle.commentCount.eq(cursorCommentCount)
+                            .and(cursorPublishedDate != null ? 
+                                newsArticle.publishedDate.gt(cursorPublishedDate) : null);
+                    }
+                    
+                    return commentPublishDateCondition != null ? 
+                        commentCountCondition.or(commentPublishDateCondition) : commentCountCondition;
                         
                 default:
                     return null;

@@ -26,6 +26,19 @@ public interface NewsArticleRepositoryCustom {
         int limit
     );
     
+    // 복합 커서를 지원하는 새로운 메서드
+    List<NewsArticle> findArticlesWithFiltersAndSortingComposite(
+        String keyword,
+        String sourceIn,
+        Timestamp publishDateFrom,
+        Timestamp publishDateTo,
+        String orderBy,
+        String direction,
+        String cursor,
+        Timestamp cursorPublishedDate,
+        int limit
+    );
+    
     List<NewsArticle> findArticlesSortedByViewCount(
         String keyword,
         String sourceIn,

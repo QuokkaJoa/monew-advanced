@@ -23,6 +23,7 @@ import com.part2.monew.repository.CommentRepository;
 import com.part2.monew.repository.NewsArticleRepository;
 import com.part2.monew.repository.UserRepository;
 import com.part2.monew.service.NewsBackupS3Manager;
+import com.part2.monew.util.DateTimeUtil;
 import java.io.InputStream;
 import java.sql.Timestamp;
 import java.time.LocalDate;
@@ -92,26 +93,32 @@ public class NewsArticleService {
 
             switch (cursorDto.orderBy()) {
                 case "commentCount":
-                    logger.info("댓글 수 정렬 QueryDSL 쿼리 호출: direction={}", cursorDto.direction());
-                    articles = newsArticleRepository.findArticlesSortedByCommentCount(
+                    logger.info("댓글 수 정렬 복합 커서 쿼리 호출: direction={}, cursor={}, after={}", 
+                        cursorDto.direction(), cursorDto.cursor(), cursorDto.after());
+                    articles = newsArticleRepository.findArticlesWithFiltersAndSortingComposite(
                         filterDto.keyword(),
                         getFirstSource(filterDto.sourceIn()),
                         filterDto.publishDateFrom(),
                         filterDto.publishDateTo(),
+                        cursorDto.orderBy(),
                         cursorDto.direction(),
                         cursorDto.cursor(),
+                        cursorDto.after(),
                         fetchLimit
                     );
                     break;
                 case "viewCount":
-                    logger.info("조회 수 정렬 쿼리 호출: direction={}", cursorDto.direction());
-                    articles = newsArticleRepository.findArticlesSortedByViewCount(
+                    logger.info("조회 수 정렬 복합 커서 쿼리 호출: direction={}, cursor={}, after={}", 
+                        cursorDto.direction(), cursorDto.cursor(), cursorDto.after());
+                    articles = newsArticleRepository.findArticlesWithFiltersAndSortingComposite(
                         filterDto.keyword(),
                         getFirstSource(filterDto.sourceIn()),
                         filterDto.publishDateFrom(),
                         filterDto.publishDateTo(),
+                        cursorDto.orderBy(),
                         cursorDto.direction(),
                         cursorDto.cursor(),
+                        cursorDto.after(),
                         fetchLimit
                     );
                     break;
@@ -447,11 +454,9 @@ public class NewsArticleService {
     public void backupDataByDate(LocalDate date) {
         logger.info("데이터 백업 시작: {}", date);
 
-        LocalDateTime startOfDayLocalDateTime = date.atStartOfDay();
-        LocalDateTime endOfDayLocalDateTime = date.atTime(LocalTime.MAX);
-
-        Timestamp startOfDayTimestamp = Timestamp.valueOf(startOfDayLocalDateTime);
-        Timestamp endOfDayTimestamp = Timestamp.valueOf(endOfDayLocalDateTime);
+        // 한국 시간대 기준으로 해당 날짜의 시작과 끝 시간 생성
+        Timestamp startOfDayTimestamp = DateTimeUtil.parseTimestamp(date.toString());  // 00:00:00 KST
+        Timestamp endOfDayTimestamp = DateTimeUtil.parseTimestampAsEndOfDay(date.toString());  // 23:59:59.999 KST
 
         List<NewsArticle> articlesToBackup = newsArticleRepository.findByIsDeletedFalseAndPublishedDateBetween(
             startOfDayTimestamp, endOfDayTimestamp);
@@ -530,16 +535,7 @@ public class NewsArticleService {
         return articles.subList(0, actualLimit);
     }
 
-    @Scheduled(cron = "0 0 0 * * ?") // 매일 정각
-    public void executeDailyNewsBackupBatch() {
-        try {
-            LocalDate yesterday = LocalDate.now().minusDays(1);
-            backupDataByDate(yesterday);
-        } catch (Exception e) {
-            logger.error("일일 뉴스 백업 배치 실행 중 오류 발생: {}", e.getMessage(), e);
 
-        }
-    }
 
     public PaginatedResponseDto<NewsArticleResponseDto> getArticlesByParams(String keyword,
         UUID interestId, List<String> sourceIn, Timestamp publishDateFrom, Timestamp publishDateTo,

@@ -2,6 +2,7 @@ package com.part2.monew.service;
 
 import com.part2.monew.config.BatchConfig;
 import com.part2.monew.entity.NewsArticle;
+import com.part2.monew.service.impl.NewsArticleService;
 import java.time.LocalDate;
 import java.util.List;
 import org.slf4j.Logger;
@@ -17,13 +18,16 @@ public class SpringBatch {
     private final BatchConfig batchConfig;
     private final SimpleNewsCollectionService newsCollectionService;
     private final NewsBackupS3Manager newsBackupS3Manager;
+    private final NewsArticleService newsArticleService;
 
     public SpringBatch(BatchConfig batchConfig, 
                       SimpleNewsCollectionService newsCollectionService,
-                      NewsBackupS3Manager newsBackupS3Manager) {
+                      NewsBackupS3Manager newsBackupS3Manager,
+                      NewsArticleService newsArticleService) {
         this.batchConfig = batchConfig;
         this.newsCollectionService = newsCollectionService;
         this.newsBackupS3Manager = newsBackupS3Manager;
+        this.newsArticleService = newsArticleService;
         
         logger.info("SpringBatch 초기화 완료 - 스케줄링 전용");
     }
@@ -49,8 +53,8 @@ public class SpringBatch {
         }
     }
 
-    //자정에 백업
-    @Scheduled(cron = "0 0 0 * * ?")
+    // 매일 자정에 백업
+    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void executeDailyBackupBatch() {
         if (!batchConfig.isEnabled()) {
             logger.info("백업 배치가 비활성화되어 있습니다.");
@@ -71,18 +75,15 @@ public class SpringBatch {
 
     private void performDailyNewsBackup() {
         try {
-            logger.info("일일 뉴스 백업 시작");
+            logger.info("=== 일일 뉴스 백업 시작 ===");
             
-            LocalDate today = LocalDate.now();
-            String backupKey = "daily-news-backup-" + today + "-" + System.currentTimeMillis() + ".json";
+            LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+            logger.info("백업 대상 날짜: {}", today);
             
-            // 간단한 백업 메시지
-            String backupContent = "{\"backup_date\":\"" + today + "\",\"message\":\"Daily backup completed\"}";
+            // NewsArticleService의 backupDataByDate 메서드 호출
+            newsArticleService.backupDataByDate(today);
             
-            // S3 업로드
-            newsBackupS3Manager.uploadNewsBackup(backupContent.getBytes(), backupKey);
-            
-            logger.info("일일 뉴스 백업 완료: {}", backupKey);
+            logger.info("=== 일일 뉴스 백업 완료 ===");
             
         } catch (Exception e) {
             logger.error("일일 뉴스 백업 실패: {}", e.getMessage(), e);

@@ -14,8 +14,6 @@ import com.part2.monew.service.impl.NewsArticleService;
 import com.part2.monew.service.impl.NewsCrawlingApiServiceImpl;
 import com.part2.monew.service.newsprovider.NewsProvider;
 import com.part2.monew.service.CategoryKeywordService;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -40,7 +38,6 @@ public class SimpleNewsCollectionService {
     private final UserSubscriberRepository userSubscriberRepository;
     private final NewsProviderProperties newsProviderProperties;
     private final List<NewsProvider> newsProviders;
-    private final NewsBackupS3Manager newsBackupS3Manager;
     private final CategoryKeywordService categoryKeywordService;
 
     public SimpleNewsCollectionService(NewsCrawlingApiServiceImpl newsCrawlingService,
@@ -49,7 +46,7 @@ public class SimpleNewsCollectionService {
         InterestNewsArticleRepository interestNewsArticleRepository,
         UserSubscriberRepository userSubscriberRepository,
         NewsProviderProperties newsProviderProperties, List<NewsProvider> newsProviders,
-        NewsBackupS3Manager newsBackupS3Manager, CategoryKeywordService categoryKeywordService) {
+        CategoryKeywordService categoryKeywordService) {
         this.newsCrawlingService = newsCrawlingService;
         this.newsArticleService = newsArticleService;
         this.interestRepository = interestRepository;
@@ -58,7 +55,6 @@ public class SimpleNewsCollectionService {
         this.userSubscriberRepository = userSubscriberRepository;
         this.newsProviderProperties = newsProviderProperties;
         this.newsProviders = newsProviders;
-        this.newsBackupS3Manager = newsBackupS3Manager;
         this.categoryKeywordService = categoryKeywordService;
         
         log.info("SimpleNewsCollectionService 초기화 완료 - CategoryKeywordService 사용");
@@ -246,10 +242,7 @@ public class SimpleNewsCollectionService {
         return filteredProviders;
     }
 
-    /**
-     * API 방식으로 뉴스 수집 + 스마트 키워드 기반 수집 전략 - 하드코딩 사전에 있는 키워드: 특화 피드에서 20개 수집 - 하드코딩 사전에 없는 키워드: 전체
-     * 기사에서 50개 수집 후 필터링
-     */
+   
     private List<NewsArticle> collectFromApiWithSmartFilter(Set<String> keywords) {
         log.info("-- API 방식 뉴스 수집 + 스마트 키워드 전략 --");
 
@@ -548,48 +541,5 @@ public class SimpleNewsCollectionService {
         }
 
         log.info("관심사 매핑 완료: {}개", totalMappings);
-    }
-
-    private void performS3Backup(List<NewsArticle> savedArticles) {
-        try {
-            log.info("=== S3 백업 시작: {}개 기사를 하나의 파일로 일괄 백업 ===", savedArticles.size());
-
-            LocalDate today = LocalDate.now();
-            String backupKey = "news-backup-" + today + "-" + System.currentTimeMillis() + ".json";
-
-            StringBuilder json = new StringBuilder();
-            json.append("{\"backup_date\":\"").append(today).append("\",");
-            json.append("\"count\":").append(savedArticles.size()).append(",");
-            json.append("\"articles\":[");
-
-            for (int i = 0; i < savedArticles.size(); i++) {
-                NewsArticle article = savedArticles.get(i);
-                json.append("{").append("\"id\":").append(article.getId()).append(",")
-                    .append("\"title\":\"").append(escapeJson(article.getTitle())).append("\",")
-                    .append("\"source\":\"").append(escapeJson(article.getSourceIn())).append("\",")
-                    .append("\"url\":\"").append(escapeJson(article.getSourceUrl())).append("\"")
-                    .append("}");
-                if (i < savedArticles.size() - 1) {
-                    json.append(",");
-                }
-            }
-            json.append("]}");
-
-            // S3 업로드
-            newsBackupS3Manager.uploadNewsBackup(json.toString().getBytes(StandardCharsets.UTF_8), backupKey);
-
-            log.info("=== S3 백업 완료: {} ===", backupKey);
-
-        } catch (Exception e) {
-            log.error("S3 백업 실패: {}", e.getMessage());
-        }
-    }
-
-    private String escapeJson(String input) {
-        if (input == null) {
-            return "";
-        }
-        return input.replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r")
-            .replace("\t", "\\t");
     }
 }
