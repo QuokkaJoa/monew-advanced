@@ -32,18 +32,14 @@ public class SpringBatch {
         logger.info("SpringBatch 초기화 완료 - 스케줄링 전용");
     }
 
-
-    @Scheduled(cron = "0 */1 * * * *") 
+    @Scheduled(cron = "0 0 0/1 * * *")
     public void executeNewsCollectionBatch() {
         if (!batchConfig.isEnabled()) {
             logger.info("뉴스 수집 배치가 비활성화되어 있습니다.");
             return;
         }
 
-        logger.info("=== 뉴스 수집 배치 시작 (매분) ===");
-        
         try {
-            // SimpleNewsCollectionService에 뉴스 수집 위임
             List<NewsArticle> collectedArticles = newsCollectionService.collectNewsWithSimpleKeywordMatching();
             
             logger.info("=== 뉴스 수집 배치 완료: 총 {}개 기사 수집 ===", collectedArticles.size());
@@ -72,7 +68,6 @@ public class SpringBatch {
         }
     }
 
-
     private void performDailyNewsBackup() {
         try {
             logger.info("=== 일일 뉴스 백업 시작 ===");
@@ -80,7 +75,7 @@ public class SpringBatch {
             LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
             logger.info("백업 대상 날짜: {}", today);
             
-            // NewsArticleService의 backupDataByDate 메서드 호출
+
             newsArticleService.backupDataByDate(today);
             
             logger.info("=== 일일 뉴스 백업 완료 ===");
