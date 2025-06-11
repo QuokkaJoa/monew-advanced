@@ -32,68 +32,91 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+
       - name: Build with Gradle
-        run: ./gradlew build
+        run: |
+          chmod +x ./gradlew
+          ./gradlew test
+
+      - name: Build Docker image
+        run: docker build -t monew:latest .
 
       - name: Set environment variables
         run: |
-          echo "ECR_REGISTRY=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com" >> $GITHUB_ENV
+          echo "ECR_REPOSITORY=public.ecr.aws/s2c8n3e6/monew-app" >> $GITHUB_ENV
           echo "IMAGE_TAG=$(date +'%Y%m%d%H%M%S')-${GITHUB_SHA::8}" >> $GITHUB_ENV
-      # 배포용 AWS 자격 증명 구성
-      - name: Configure AWS credentials for deployment
-        uses: aws-actions/configure-aws-credentials@v2
+
+      - name: Tag Docker image
+        run: |
+          docker tag discodeit:latest ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          docker tag discodeit:latest ${{ env.ECR_REPOSITORY }}:latest
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_DEPLOY_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_DEPLOY_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: us-east-1
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
 
-      - name: Build and tag Docker image
-        run: |
-          docker build \\
-            --build-arg SPRING_PROFILES_ACTIVE=prod \\
-            -t ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} .
-          docker tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
       - name: Push Docker image to ECR
         run: |
-          docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
-          docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+          docker push ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          docker push ${{ env.ECR_REPOSITORY }}:latest
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_DEPLOY_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_DEPLOY_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
       - name: Download task definition
         run: |
-          aws ecs describe-task-definition --task-definition ${{ env.ECS_TASK_DEFINITION }} --query taskDefinition > task-definition.json
-      - name: Fill in the new image ID in the Amazon ECS task definition
+          aws ecs describe-task-definition --task-definition discodeit-task --query taskDefinition > task-definition.json
+
+      - name: Update task definition with new image
         id: render-task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
-          container-name: ${{ env.CONTAINER_NAME }}
-          image: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          container-name: app
+          image: ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          environment-variables: |
+            SPRING_PROFILES_ACTIVE=dev
+            HELLO=world
+
+      - name: Print task definition
+        run: |
+          echo ${{ steps.render-task-def.outputs.task-definition }}
+          cat ${{ steps.render-task-def.outputs.task-definition }}
+
+      - name: Set ECS environment variables
+        run: |
+          echo "ECS_CLUSTER=soft-bat-nvl79o" >> $GITHUB_ENV
+          echo "ECS_SERVICE=discodeit-task-service-5unz8257" >> $GITHUB_ENV
 
       - name: Deploy to Amazon ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.render-task-def.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
+          service: ${{ env.ECS_SERVICE }}
           wait-for-service-stability: true
 
       - name: Verify deployment
         run: |
-          echo "Waiting for service stability..."
-          aws ecs wait services-stable --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE }}
+          echo "Verifying deployment..."
+          SERVICE_STATUS=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE }} --query 'services[0].status' --output text)
           
-          echo "Checking service running count..."
-          RUNNING_COUNT=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE }} --query 'services[0].runningCount' --output text)
-          DESIRED_COUNT=$(aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE }} --query 'services[0].desiredCount' --output text)
-          
-          echo "Running tasks: $RUNNING_COUNT / $DESIRED_COUNT"
-          
-          if [ "$RUNNING_COUNT" -eq "$DESIRED_COUNT" ] && [ "$RUNNING_COUNT" -gt 0 ]; then
-            echo "✅ Deployment successful!"
+          if [ "$SERVICE_STATUS" = "ACTIVE" ]; then
+            echo "Deployment successful! Service is active."
           else
-            echo "❌ Deployment failed. Check ECS console for details."
+            echo "Deployment may have issues. Service status: $SERVICE_STATUS"
             exit 1
           fi
