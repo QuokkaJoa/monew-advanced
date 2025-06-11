@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(CommentController.class)
+@ActiveProfiles("test")
 class CommentControllerTest {
 
     @Autowired
@@ -41,6 +43,8 @@ class CommentControllerTest {
     @DisplayName("댓글 목록을 조회한다.")
     @Test
     void findCommentsByArticleId() throws Exception {
+        UUID userId    = UUID.randomUUID();
+
         // given
         CommentRequest commentRequest = CommentRequest.builder()
                 .articleId(UUID.randomUUID())
@@ -57,7 +61,8 @@ class CommentControllerTest {
                         .param("articleId", commentRequest.getArticleId().toString())
                         .param("orderBy", commentRequest.getOrderBy())
                         .param("direction", commentRequest.getDirection())
-                        .param("limit", String.valueOf(commentRequest.getLimit())))
+                        .param("limit", String.valueOf(commentRequest.getLimit()))
+                        .header("Monew-Request-User-ID", userId))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isOk());
     }

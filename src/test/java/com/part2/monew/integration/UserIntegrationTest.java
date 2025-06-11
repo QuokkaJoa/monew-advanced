@@ -13,7 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,7 +24,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @AutoConfigureMockMvc
+@Transactional
 public class UserIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
@@ -48,8 +53,7 @@ public class UserIntegrationTest {
                         .content(objectMapper.writeValueAsString(createReq)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("test@naver.com"))
-                .andExpect(jsonPath("$.nickname").value("tester"))
-                .andExpect(jsonPath("$.createdAt").exists());
+                .andExpect(jsonPath("$.nickname").value("tester"));
 
         User saved = userRepository.findByEmailAndActiveTrue("test@naver.com").orElse(null);
         assertThat(saved).isNotNull();

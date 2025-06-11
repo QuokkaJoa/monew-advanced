@@ -1,7 +1,6 @@
 package com.part2.monew.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,6 +10,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -50,7 +50,7 @@ public class CommentsManagement {
     private boolean active = true;
 
     @OneToMany(mappedBy = "commentsManagement", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CommentLike> commentLikes;
+    private List<CommentLike> commentLikes = new ArrayList<>();
 
 
     @Builder
