@@ -1,10 +1,12 @@
 package com.part2.monew.repository;
 
 import com.part2.monew.entity.User;
+import com.part2.monew.mapper.InterestMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.Optional;
 
@@ -15,6 +17,9 @@ public class UserRepositoryTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @MockitoBean
+    private InterestMapper interestMapper;
 
     private User saved;
     private User user;

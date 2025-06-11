@@ -41,6 +41,8 @@ class CommentControllerTest {
     @DisplayName("댓글 목록을 조회한다.")
     @Test
     void findCommentsByArticleId() throws Exception {
+        UUID userId    = UUID.randomUUID();
+
         // given
         CommentRequest commentRequest = CommentRequest.builder()
                 .articleId(UUID.randomUUID())
@@ -57,7 +59,8 @@ class CommentControllerTest {
                         .param("articleId", commentRequest.getArticleId().toString())
                         .param("orderBy", commentRequest.getOrderBy())
                         .param("direction", commentRequest.getDirection())
-                        .param("limit", String.valueOf(commentRequest.getLimit())))
+                        .param("limit", String.valueOf(commentRequest.getLimit()))
+                        .header("Monew-Request-User-ID", userId))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(status().isOk());
     }

@@ -66,7 +66,10 @@ public class CommentRepositoryCustomImpl implements CommentRepositoryCustom {
             List<CommentLike> filtered = c.getCommentLikes().stream()
                     .filter(cl -> likedSet.contains(cl.getCommentsManagement().getId()))
                     .toList();
-            c.setCommentLikes(filtered);
+
+            List<CommentLike> likes = c.getCommentLikes();
+            likes.clear();
+            likes.addAll(filtered);
         });
 
         return comments;
