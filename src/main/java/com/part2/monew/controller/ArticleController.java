@@ -7,15 +7,10 @@ import com.part2.monew.dto.response.NewsArticleResponseDto;
 import com.part2.monew.dto.response.PaginatedResponseDto;
 import com.part2.monew.dto.response.RestoreResultDto;
 import com.part2.monew.service.impl.NewsArticleService;
+import com.part2.monew.util.DateTimeUtil;
 import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,7 +31,6 @@ public class ArticleController {
         this.newsArticleService = newsArticleService;
     }
 
-    // 메인 검색 API (관심사, 출처, 날짜 필터 + 정렬 + 커서 기반 페이징)
     @GetMapping
     public ResponseEntity<PaginatedResponseDto<NewsArticleResponseDto>> getArticles(
         @RequestParam(value = "keyword", required = false) String keyword,
@@ -53,9 +47,9 @@ public class ArticleController {
         
         try {
             // 날짜 파싱
-            Timestamp publishDateFromTs = parseTimestamp(publishDateFrom);
-            Timestamp publishDateToTs = parseTimestamp(publishDateTo);
-            Timestamp afterTs = parseTimestamp(after);
+            Timestamp publishDateFromTs = DateTimeUtil.parseTimestamp(publishDateFrom);
+            Timestamp publishDateToTs = DateTimeUtil.parseTimestampAsEndOfDay(publishDateTo);  // 종료일은 하루의 끝 시간으로
+            Timestamp afterTs = DateTimeUtil.parseTimestamp(after);
             
             // interestId를 UUID로 변환
             UUID interestUuid = null;
@@ -145,7 +139,6 @@ public class ArticleController {
         
         try {
             if (date != null) {
-                // 특정 날짜 백업
                 java.time.LocalDate backupDate = java.time.LocalDate.parse(date);
                 newsArticleService.backupDataByDate(backupDate);
                 return ResponseEntity.ok("백업 완료: " + date);
@@ -184,26 +177,5 @@ public class ArticleController {
         }
     }
 
-    private Timestamp parseTimestamp(String dateTimeString) {
-        if (dateTimeString == null || dateTimeString.trim().isEmpty()) {
-            return null;
-        }
-        
-        try {
-            OffsetDateTime offsetDateTime = OffsetDateTime.parse(dateTimeString);
-            return Timestamp.from(offsetDateTime.toInstant());
-        } catch (DateTimeParseException e1) {
-            try {
-                Instant instant = Instant.parse(dateTimeString);
-                return Timestamp.from(instant);
-            } catch (DateTimeParseException e2) {
-                try {
-                    LocalDateTime localDateTime = LocalDateTime.parse(dateTimeString, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-                    return Timestamp.valueOf(localDateTime);
-                } catch (DateTimeParseException e3) {
-                    throw new IllegalArgumentException("Invalid date format: " + dateTimeString, e3);
-                }
-            }
-        }
-    }
+
 }
