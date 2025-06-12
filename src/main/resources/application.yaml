@@ -198,7 +198,9 @@ monew:
         name: "연합뉴스TV 날씨"
         feed-url: "http://www.yonhapnewstv.co.kr/category/news/weather/feed/"
         enabled: true
-
+  cloud:
+    slack:
+      webhook-url: ${WEBHOOK-URL}
   batch:
     news-collection:
       enabled: ${BATCH_NEWS_COLLECTION_ENABLED:true}
@@ -212,6 +214,7 @@ monew:
       s3-upload:
         enabled: ${BATCH_S3_UPLOAD_ENABLED:true}
         backup-folder: ${BATCH_S3_BACKUP_FOLDER:news-backup}
+
 
 management:
   info:

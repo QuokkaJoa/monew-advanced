@@ -29,7 +29,7 @@ public class SpringBatch {
     }
 
 
-    @Scheduled(cron = "0 */1 * * * *") 
+    @Scheduled(cron = "0 0 0/1 * * *")
     public void executeNewsCollectionBatch() {
         if (!batchConfig.isEnabled()) {
             logger.info("뉴스 수집 배치가 비활성화되어 있습니다.");

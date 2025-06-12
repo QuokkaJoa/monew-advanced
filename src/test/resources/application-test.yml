@@ -22,9 +22,13 @@ logging:
     org.hibernate.SQL: DEBUG
     org.springframework.test.context.transaction: DEBUG
 
-aws:
-  s3:
-    access-key: test-access-key
-    secret-key: test-secret-key
-    region: ap-northeast-2
-    bucket: test-bucket
+monew:
+  storage:
+    s3:
+      accessKeyId: test-access-key
+      secretAccessKey: test-secret-key
+      region: ap-northeast-2
+      bucket: test-bucket
+  cloud:
+    slack:
+      webhook-url: test-webhook-url
