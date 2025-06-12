@@ -32,6 +32,7 @@ monew:
       secretAccessKey: ${AWS_S3_SECRET_KEY}
       region: ${AWS_S3_REGION}
       bucket: ${AWS_S3_BUCKET}
+
   news-providers:
     providers:
       naver-api:
@@ -214,6 +215,7 @@ monew:
       s3-upload:
         enabled: ${BATCH_S3_UPLOAD_ENABLED:true}
         backup-folder: ${BATCH_S3_BACKUP_FOLDER:news-backup}
+
 
 
 management:
