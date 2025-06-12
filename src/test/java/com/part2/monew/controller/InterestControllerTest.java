@@ -106,11 +106,23 @@ class InterestControllerTest {
 
     resultActions
         .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT_VALUE.getCode()))
-        .andExpect(jsonPath("$.message").value(ErrorCode.INVALID_INPUT_VALUE.getMessage()))
-        .andExpect(jsonPath("$.fieldErrors").isArray())
-        .andExpect(jsonPath("$.fieldErrors[0].field").value("name"))
-        .andExpect(jsonPath("$.fieldErrors[0].reason").value("관심사 이름은 필수입니다."));
+        .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_INPUT_VALUE.getCode()));
+
+    String responseBody = resultActions.andReturn().getResponse().getContentAsString();
+    ErrorResponse errorResponse = objectMapper.readValue(responseBody, ErrorResponse.class);
+    assertThat(errorResponse.fieldErrors())
+        .anySatisfy(fieldError -> {
+          assertThat(fieldError.field()).isEqualTo("name");
+          assertThat(fieldError.reason()).isEqualTo("관심사 이름은 필수입니다.");
+        });
+
+    assertThat(errorResponse.fieldErrors())
+        .anySatisfy(fieldError -> {
+          assertThat(fieldError.field()).isEqualTo("name");
+          assertThat(fieldError.reason()).isEqualTo("관심사 이름은 1자 이상 50자 이하로 입력해주세요.");
+        });
+
+    assertThat(errorResponse.fieldErrors()).hasSize(2);
   }
 
   @Test

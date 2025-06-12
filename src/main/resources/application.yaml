@@ -30,8 +30,8 @@ monew:
     s3:
       accessKeyId: ${AWS_S3_ACCESS_KEY}
       secretAccessKey: ${AWS_S3_SECRET_KEY}
-      region: ${AWS_S3_REGION:ap-northeast-2}
-      bucket: ${AWS_S3_BUCKET:monewbackup}
+      region: ${AWS_S3_REGION}
+      bucket: ${AWS_S3_BUCKET}
   news-providers:
     providers:
       naver-api:
@@ -198,6 +198,23 @@ monew:
         name: "연합뉴스TV 날씨"
         feed-url: "http://www.yonhapnewstv.co.kr/category/news/weather/feed/"
         enabled: true
+  cloud:
+    slack:
+      webhook-url: ${WEBHOOK-URL}
+  batch:
+    news-collection:
+      enabled: ${BATCH_NEWS_COLLECTION_ENABLED:true}
+      cron: ${BATCH_NEWS_COLLECTION_CRON:0 0 * * * *}
+      keywords: ${BATCH_NEWS_KEYWORDS:경제,정치,사회,IT,스포츠}  # 일단 설정
+
+      backup:
+        enabled: ${BATCH_BACKUP_ENABLED:true}
+        local-path: ${BATCH_BACKUP_LOCAL_PATH:./backup}
+        file-format: ${BATCH_BACKUP_FORMAT:json}
+      s3-upload:
+        enabled: ${BATCH_S3_UPLOAD_ENABLED:true}
+        backup-folder: ${BATCH_S3_BACKUP_FOLDER:news-backup}
+
 
 management:
   info:

@@ -39,7 +39,7 @@ jobs:
           ./gradlew test
 
       - name: Build Docker image
-        run: docker build -t monew:latest .
+        run: docker build -t monew-app:latest .
 
       - name: Set environment variables
         run: |
@@ -48,8 +48,8 @@ jobs:
 
       - name: Tag Docker image
         run: |
-          docker tag discodeit:latest ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
-          docker tag discodeit:latest ${{ env.ECR_REPOSITORY }}:latest
+          docker tag monew-app:latest ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          docker tag monew-app:latest ${{ env.ECR_REPOSITORY }}:latest
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -78,7 +78,7 @@ jobs:
 
       - name: Download task definition
         run: |
-          aws ecs describe-task-definition --task-definition discodeit-task --query taskDefinition > task-definition.json
+          aws ecs describe-task-definition --task-definition monew-app --query taskDefinition > task-definition.json
 
       - name: Update task definition with new image
         id: render-task-def
@@ -88,7 +88,7 @@ jobs:
           container-name: app
           image: ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
           environment-variables: |
-            SPRING_PROFILES_ACTIVE=dev
+            SPRING_PROFILES_ACTIVE=prod
             HELLO=world
 
       - name: Print task definition
@@ -98,8 +98,8 @@ jobs:
 
       - name: Set ECS environment variables
         run: |
-          echo "ECS_CLUSTER=soft-bat-nvl79o" >> $GITHUB_ENV
-          echo "ECS_SERVICE=discodeit-task-service-5unz8257" >> $GITHUB_ENV
+          echo "ECS_CLUSTER=intrepid-eagle-tpti91" >> $GITHUB_ENV
+          echo "ECS_SERVICE=monew-app-service-tfevdb1n" >> $GITHUB_ENV
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
