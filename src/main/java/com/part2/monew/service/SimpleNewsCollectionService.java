@@ -11,7 +11,7 @@ import com.part2.monew.repository.InterestNewsArticleRepository;
 import com.part2.monew.repository.InterestRepository;
 import com.part2.monew.repository.UserSubscriberRepository;
 import com.part2.monew.service.impl.NewsArticleService;
-import com.part2.monew.service.impl.NewsCrawlingApiServiceImpl;
+
 import com.part2.monew.service.newsprovider.NewsProvider;
 import com.part2.monew.service.CategoryKeywordService;
 import java.util.ArrayList;
@@ -30,7 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class SimpleNewsCollectionService {
 
-    private final NewsCrawlingApiServiceImpl newsCrawlingService;
     private final NewsArticleService newsArticleService;
     private final InterestRepository interestRepository;
     private final InterestKeywordRepository interestKeywordRepository;
@@ -40,14 +39,12 @@ public class SimpleNewsCollectionService {
     private final List<NewsProvider> newsProviders;
     private final CategoryKeywordService categoryKeywordService;
 
-    public SimpleNewsCollectionService(NewsCrawlingApiServiceImpl newsCrawlingService,
-        NewsArticleService newsArticleService, InterestRepository interestRepository,
+    public SimpleNewsCollectionService(NewsArticleService newsArticleService, InterestRepository interestRepository,
         InterestKeywordRepository interestKeywordRepository,
         InterestNewsArticleRepository interestNewsArticleRepository,
         UserSubscriberRepository userSubscriberRepository,
         NewsProviderProperties newsProviderProperties, List<NewsProvider> newsProviders,
         CategoryKeywordService categoryKeywordService) {
-        this.newsCrawlingService = newsCrawlingService;
         this.newsArticleService = newsArticleService;
         this.interestRepository = interestRepository;
         this.interestKeywordRepository = interestKeywordRepository;
@@ -269,21 +266,34 @@ public class SimpleNewsCollectionService {
 
             List<NewsArticle> allArticles = new ArrayList<>();
 
-            if (!categoryMatchedKeywords.isEmpty()) {
-                log.info("=== 특화 피드 수집: {}개 키워드로 20개 기사 수집 ===", categoryMatchedKeywords.size());
-                List<NewsArticle> specializedArticles = newsCrawlingService.collectNewsForKeywords(
-                    categoryMatchedKeywords, 20);
-                allArticles.addAll(specializedArticles);
-                log.info("특화 피드에서 {}개 기사 수집됨", specializedArticles.size());
-            }
-
-            if (!unknownKeywords.isEmpty() || allArticles.size() < 10) {
-                log.info("=== 전체 피드 수집: 50개 기사에서 키워드 매칭 ===");
-                List<String> generalKeywords = Arrays.asList("한국", "뉴스", "사회", "경제", "정치");
-                List<NewsArticle> generalArticles = newsCrawlingService.collectNewsForKeywords(
-                    generalKeywords, 50);
-                allArticles.addAll(generalArticles);
-                log.info("전체 피드에서 {}개 기사 수집됨", generalArticles.size());
+            // NewsProvider를 사용한 뉴스 수집으로 대체
+            NewsProvider naverProvider = newsProviders.stream()
+                .filter(p -> p.getProviderKey().contains("Naver"))
+                .findFirst().orElse(null);
+                
+            if (naverProvider != null) {
+                try {
+                    // 네이버 API 설정 가져오기
+                    NewsProviderProperties.ProviderConfig naverConfig = newsProviderProperties.getProviders()
+                        .values().stream()
+                        .filter(config -> "api".equals(config.getType()) && config.isEnabled())
+                        .findFirst().orElse(null);
+                        
+                    if (naverConfig != null) {
+                        List<String> searchKeywords = !categoryMatchedKeywords.isEmpty() ? 
+                            categoryMatchedKeywords : Arrays.asList("한국", "뉴스", "사회", "경제", "정치");
+                            
+                        log.info("=== 네이버 API 수집: {}개 키워드로 기사 수집 ===", searchKeywords.size());
+                        List<NewsArticleDto> dtos = naverProvider.fetchNews(naverConfig, searchKeywords);
+                        List<NewsArticle> articles = convertDtosToEntities(dtos);
+                        allArticles.addAll(articles);
+                        log.info("네이버 API에서 {}개 기사 수집됨", articles.size());
+                    }
+                } catch (Exception e) {
+                    log.error("네이버 API 수집 실패: {}", e.getMessage());
+                }
+            } else {
+                log.warn("네이버 NewsProvider를 찾을 수 없습니다.");
             }
 
             // 중복 제거
@@ -356,7 +366,10 @@ public class SimpleNewsCollectionService {
             return allRssArticles;
         }
 
-        // 각 RSS 소스별로 빠른 수집 (시간 제한)
+        // 각 RSS 소스별로 빠른 수집
+        int successCount = 0;
+        int totalCount = relevantRssProviders.size();
+        
         for (Map.Entry<String, NewsProviderProperties.ProviderConfig> entry : relevantRssProviders.entrySet()) {
             String providerKey = entry.getKey();
             NewsProviderProperties.ProviderConfig config = entry.getValue();
@@ -366,31 +379,36 @@ public class SimpleNewsCollectionService {
 
                 long startTime = System.currentTimeMillis();
 
-                // 키워드 없이 기사 수집 (빠른 처리)
                 List<NewsArticleDto> dtos = rssProvider.fetchNews(config, new ArrayList<>());
+                
+                if (dtos == null || dtos.isEmpty()) {
+                    log.warn("RSS '{}': 수집된 기사가 없습니다", config.getName());
+                    continue;
+                }
+                
                 List<NewsArticle> articles = convertDtosToEntities(dtos);
 
-                // 각 RSS당 최대 10개로 확대
                 if (articles.size() > 10) {
                     articles = articles.subList(0, 10);
                 }
 
                 allRssArticles.addAll(articles);
+                successCount++;
 
                 long elapsed = System.currentTimeMillis() - startTime;
-                log.info("RSS '{}': {}개 기사 수집 ({}ms)", config.getName(), articles.size(), elapsed);
+                log.info("RSS '{}': {}개 기사 수집 성공 ({}ms)", config.getName(), articles.size(), elapsed);
 
-                // 개별 RSS 처리가 10초 이상 걸리면 중단
                 if (elapsed > 10000) {
                     log.warn("RSS '{}' 처리 시간 초과 ({}ms), 다음 소스로 이동", config.getName(), elapsed);
                 }
 
             } catch (Exception e) {
-                log.error("RSS '{}' 수집 실패 (빠른 처리): {}", config.getName(), e.getMessage());
+                log.error("RSS '{}' 수집 실패: {} - 다음 RSS로 계속 진행", config.getName(), e.getMessage());
+                continue;
             }
         }
-
-        log.info("RSS 총 {}개 기사 수집 완료, 키워드 매칭 시작", allRssArticles.size());
+        
+        log.info("RSS 수집 완료: {}/{}개 소스 성공, 총 {}개 기사", successCount, totalCount, allRssArticles.size());
 
         // RSS 기사들도 키워드 매칭 필터링 적용
         List<NewsArticle> matchedRssArticles = new ArrayList<>();

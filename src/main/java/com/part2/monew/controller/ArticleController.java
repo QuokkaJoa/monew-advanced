@@ -44,13 +44,13 @@ public class ArticleController {
         @RequestParam(value = "after", required = false) String after,
         @RequestParam(value = "limit", defaultValue = "20") Integer limit,
         @RequestHeader(value = "Monew-Request-User-ID", required = false) String userId) {
-        
+
         try {
             // 날짜 파싱
             Timestamp publishDateFromTs = DateTimeUtil.parseTimestamp(publishDateFrom);
-            Timestamp publishDateToTs = DateTimeUtil.parseTimestampAsEndOfDay(publishDateTo);  // 종료일은 하루의 끝 시간으로
+            Timestamp publishDateToTs = DateTimeUtil.parseTimestampAsEndOfDay(publishDateTo);
             Timestamp afterTs = DateTimeUtil.parseTimestamp(after);
-            
+
             // interestId를 UUID로 변환
             UUID interestUuid = null;
             if (interestId != null && !interestId.trim().isEmpty()) {
@@ -60,40 +60,27 @@ public class ArticleController {
                     return ResponseEntity.badRequest().build();
                 }
             }
-            
-         
-            FilterDto filterDto = new FilterDto(
-                keyword, 
-                interestUuid,
-                sourceIn, 
-                publishDateFromTs, 
-                publishDateToTs
-            );
-            
-            RequestCursorDto cursorDto = new RequestCursorDto(
-                orderBy, 
-                direction, 
-                cursor, 
-                afterTs,
-                null, // nextCursorViewCount는 내부에서 계산
-                limit
-            );
-            
+
+            FilterDto filterDto = new FilterDto(keyword, interestUuid, sourceIn, publishDateFromTs,
+                publishDateToTs);
+
+            RequestCursorDto cursorDto = new RequestCursorDto(orderBy, direction, cursor, afterTs,
+                null, limit);
+
             PaginatedResponseDto<NewsArticleResponseDto> result = newsArticleService.getArticles(
                 filterDto, cursorDto, userId);
-            
+
             return ResponseEntity.ok(result);
-            
+
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
     }
 
     @PostMapping("/{articleId}/article-views")
-    public ResponseEntity<Void> incrementViewCountAlternative(
-        @PathVariable String articleId,
+    public ResponseEntity<Void> incrementViewCountAlternative(@PathVariable String articleId,
         @RequestHeader(value = "Monew-Request-User-ID", required = false) String userId) {
-        
+
         try {
             UUID articleUuid = UUID.fromString(articleId);
             UUID userUuid = UUID.fromString(userId);
@@ -115,28 +102,25 @@ public class ArticleController {
     public ResponseEntity<RestoreResultDto> restoreArticles(
         @RequestParam(value = "fromDate", required = false) String fromDate,
         @RequestParam(value = "toDate", required = false) String toDate) {
-        
+
         if (fromDate != null && toDate != null) {
             newsArticleService.restoreDataByDateRange(fromDate, toDate);
-            return ResponseEntity.ok(RestoreResultDto.builder()
-                .restoreDate(new Timestamp(System.currentTimeMillis()))
-                .restoredArticleIds(List.of())
-                .restoredArticleCount(0L)
-                .build());
+            return ResponseEntity.ok(
+                RestoreResultDto.builder().restoreDate(new Timestamp(System.currentTimeMillis()))
+                    .restoredArticleIds(List.of()).restoredArticleCount(0L).build());
         } else {
             int restoredCount = newsArticleService.restoreFromLatestBackup();
-            return ResponseEntity.ok(RestoreResultDto.builder()
-                .restoreDate(new Timestamp(System.currentTimeMillis()))
-                .restoredArticleIds(List.of())
-                .restoredArticleCount((long) restoredCount)
-                .build());
+            return ResponseEntity.ok(
+                RestoreResultDto.builder().restoreDate(new Timestamp(System.currentTimeMillis()))
+                    .restoredArticleIds(List.of()).restoredArticleCount((long) restoredCount)
+                    .build());
         }
     }
 
     @PostMapping("/backup")
     public ResponseEntity<String> backupArticles(
         @RequestParam(value = "date", required = false) String date) {
-        
+
         try {
             if (date != null) {
                 java.time.LocalDate backupDate = java.time.LocalDate.parse(date);
