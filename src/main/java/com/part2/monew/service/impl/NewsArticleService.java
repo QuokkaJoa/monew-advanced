@@ -77,10 +77,6 @@ public class NewsArticleService {
         int effectiveLimit = cursorDto.limit() > 0 ? cursorDto.limit() : 20;
 
         try {
-            logger.info(
-                "효율적인 정렬 방식으로 검색 시작 - keyword: {}, source: {}, orderBy: {}, direction: {}, cursor: {}, effectiveLimit: {}",
-                filterDto.keyword(), getFirstSource(filterDto.sourceIn()), cursorDto.orderBy(),
-                cursorDto.direction(), cursorDto.cursor(), effectiveLimit);
 
             return switch (cursorDto.orderBy()) {
                 case "commentCount" ->
