@@ -18,7 +18,6 @@ public class NewsArticleDto {
     private String originalLink;      // 원본 기사 URL
     private Timestamp publishedDate; // 발행 일시
     private String summaryOrContent;  // 요약
-    private String author;            // 기자명
     private String guid;              // RSS의 경우 전역 고유 식별자
     private String thumbnailUrl;
 } 

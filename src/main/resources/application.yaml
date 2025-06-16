@@ -32,6 +32,7 @@ monew:
       secretAccessKey: ${AWS_S3_SECRET_KEY}
       region: ${AWS_S3_REGION}
       bucket: ${AWS_S3_BUCKET}
+
   news-providers:
     providers:
       naver-api:
@@ -151,52 +152,52 @@ monew:
       yonhap-latest:
         type: "rss"
         name: "연합뉴스TV 최신"
-        feed-url: "http://www.yonhapnewstv.co.kr/browse/feed/"
+        feed-url: "https://www.yonhapnewstv.co.kr/browse/feed/"
         enabled: true
       yonhap-headline:
         type: "rss"
         name: "연합뉴스TV 헤드라인"
-        feed-url: "http://www.yonhapnewstv.co.kr/category/news/headline/feed/"
+        feed-url: "https://www.yonhapnewstv.co.kr/category/news/headline/feed/"
         enabled: true
       yonhap-politics:
         type: "rss"
         name: "연합뉴스TV 정치"
-        feed-url: "http://www.yonhapnewstv.co.kr/category/news/politics/feed/"
+        feed-url: "https://www.yonhapnewstv.co.kr/category/news/politics/feed/"
         enabled: true
       yonhap-economy:
         type: "rss"
         name: "연합뉴스TV 경제"
-        feed-url: "http://www.yonhapnewstv.co.kr/category/news/economy/feed/"
+        feed-url: "https://www.yonhapnewstv.co.kr/category/news/economy/feed/"
         enabled: true
       yonhap-society:
         type: "rss"
         name: "연합뉴스TV 사회"
-        feed-url: "http://www.yonhapnewstv.co.kr/category/news/society/feed/"
+        feed-url: "https://www.yonhapnewstv.co.kr/category/news/society/feed/"
         enabled: true
       yonhap-local:
         type: "rss"
         name: "연합뉴스TV 지역"
-        feed-url: "http://www.yonhapnewstv.co.kr/category/news/local/feed/"
+        feed-url: "https://www.yonhapnewstv.co.kr/category/news/local/feed/"
         enabled: true
       yonhap-international:
         type: "rss"
         name: "연합뉴스TV 세계"
-        feed-url: "http://www.yonhapnewstv.co.kr/category/news/international/feed/"
+        feed-url: "https://www.yonhapnewstv.co.kr/category/news/international/feed/"
         enabled: true
       yonhap-culture:
         type: "rss"
         name: "연합뉴스TV 문화·연예"
-        feed-url: "http://www.yonhapnewstv.co.kr/category/news/culture/feed/"
+        feed-url: "https://www.yonhapnewstv.co.kr/category/news/culture/feed/"
         enabled: true
       yonhap-sports:
         type: "rss"
         name: "연합뉴스TV 스포츠"
-        feed-url: "http://www.yonhapnewstv.co.kr/category/news/sports/feed/"
+        feed-url: "https://www.yonhapnewstv.co.kr/category/news/sports/feed/"
         enabled: true
       yonhap-weather:
         type: "rss"
         name: "연합뉴스TV 날씨"
-        feed-url: "http://www.yonhapnewstv.co.kr/category/news/weather/feed/"
+        feed-url: "https://www.yonhapnewstv.co.kr/category/news/weather/feed/"
         enabled: true
   cloud:
     slack:
@@ -214,6 +215,7 @@ monew:
       s3-upload:
         enabled: ${BATCH_S3_UPLOAD_ENABLED:true}
         backup-folder: ${BATCH_S3_BACKUP_FOLDER:news-backup}
+
 
 
 management:

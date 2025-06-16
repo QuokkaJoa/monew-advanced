@@ -32,3 +32,12 @@ server:
 logging:
   level:
     com.part2.monew: DEBUG
+
+monew:
+  batch:
+    news-collection:
+      enabled: ${BATCH_NEWS_COLLECTION_ENABLED:true}
+      backup:
+        enabled: ${BATCH_BACKUP_ENABLED:true}
+      s3-upload:
+        enabled: ${BATCH_S3_UPLOAD_ENABLED:true}

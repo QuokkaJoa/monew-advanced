@@ -11,11 +11,9 @@ import com.part2.monew.repository.InterestNewsArticleRepository;
 import com.part2.monew.repository.InterestRepository;
 import com.part2.monew.repository.UserSubscriberRepository;
 import com.part2.monew.service.impl.NewsArticleService;
-import com.part2.monew.service.impl.NewsCrawlingApiServiceImpl;
+
 import com.part2.monew.service.newsprovider.NewsProvider;
 import com.part2.monew.service.CategoryKeywordService;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,7 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class SimpleNewsCollectionService {
 
-    private final NewsCrawlingApiServiceImpl newsCrawlingService;
     private final NewsArticleService newsArticleService;
     private final InterestRepository interestRepository;
     private final InterestKeywordRepository interestKeywordRepository;
@@ -40,17 +37,14 @@ public class SimpleNewsCollectionService {
     private final UserSubscriberRepository userSubscriberRepository;
     private final NewsProviderProperties newsProviderProperties;
     private final List<NewsProvider> newsProviders;
-    private final NewsBackupS3Manager newsBackupS3Manager;
     private final CategoryKeywordService categoryKeywordService;
 
-    public SimpleNewsCollectionService(NewsCrawlingApiServiceImpl newsCrawlingService,
-        NewsArticleService newsArticleService, InterestRepository interestRepository,
+    public SimpleNewsCollectionService(NewsArticleService newsArticleService, InterestRepository interestRepository,
         InterestKeywordRepository interestKeywordRepository,
         InterestNewsArticleRepository interestNewsArticleRepository,
         UserSubscriberRepository userSubscriberRepository,
         NewsProviderProperties newsProviderProperties, List<NewsProvider> newsProviders,
-        NewsBackupS3Manager newsBackupS3Manager, CategoryKeywordService categoryKeywordService) {
-        this.newsCrawlingService = newsCrawlingService;
+        CategoryKeywordService categoryKeywordService) {
         this.newsArticleService = newsArticleService;
         this.interestRepository = interestRepository;
         this.interestKeywordRepository = interestKeywordRepository;
@@ -58,7 +52,6 @@ public class SimpleNewsCollectionService {
         this.userSubscriberRepository = userSubscriberRepository;
         this.newsProviderProperties = newsProviderProperties;
         this.newsProviders = newsProviders;
-        this.newsBackupS3Manager = newsBackupS3Manager;
         this.categoryKeywordService = categoryKeywordService;
         
         log.info("SimpleNewsCollectionService 초기화 완료 - CategoryKeywordService 사용");
@@ -246,10 +239,7 @@ public class SimpleNewsCollectionService {
         return filteredProviders;
     }
 
-    /**
-     * API 방식으로 뉴스 수집 + 스마트 키워드 기반 수집 전략 - 하드코딩 사전에 있는 키워드: 특화 피드에서 20개 수집 - 하드코딩 사전에 없는 키워드: 전체
-     * 기사에서 50개 수집 후 필터링
-     */
+   
     private List<NewsArticle> collectFromApiWithSmartFilter(Set<String> keywords) {
         log.info("-- API 방식 뉴스 수집 + 스마트 키워드 전략 --");
 
@@ -276,21 +266,34 @@ public class SimpleNewsCollectionService {
 
             List<NewsArticle> allArticles = new ArrayList<>();
 
-            if (!categoryMatchedKeywords.isEmpty()) {
-                log.info("=== 특화 피드 수집: {}개 키워드로 20개 기사 수집 ===", categoryMatchedKeywords.size());
-                List<NewsArticle> specializedArticles = newsCrawlingService.collectNewsForKeywords(
-                    categoryMatchedKeywords, 20);
-                allArticles.addAll(specializedArticles);
-                log.info("특화 피드에서 {}개 기사 수집됨", specializedArticles.size());
-            }
-
-            if (!unknownKeywords.isEmpty() || allArticles.size() < 10) {
-                log.info("=== 전체 피드 수집: 50개 기사에서 키워드 매칭 ===");
-                List<String> generalKeywords = Arrays.asList("한국", "뉴스", "사회", "경제", "정치");
-                List<NewsArticle> generalArticles = newsCrawlingService.collectNewsForKeywords(
-                    generalKeywords, 50);
-                allArticles.addAll(generalArticles);
-                log.info("전체 피드에서 {}개 기사 수집됨", generalArticles.size());
+            // NewsProvider를 사용한 뉴스 수집으로 대체
+            NewsProvider naverProvider = newsProviders.stream()
+                .filter(p -> p.getProviderKey().contains("Naver"))
+                .findFirst().orElse(null);
+                
+            if (naverProvider != null) {
+                try {
+                    // 네이버 API 설정 가져오기
+                    NewsProviderProperties.ProviderConfig naverConfig = newsProviderProperties.getProviders()
+                        .values().stream()
+                        .filter(config -> "api".equals(config.getType()) && config.isEnabled())
+                        .findFirst().orElse(null);
+                        
+                    if (naverConfig != null) {
+                        List<String> searchKeywords = !categoryMatchedKeywords.isEmpty() ? 
+                            categoryMatchedKeywords : Arrays.asList("한국", "뉴스", "사회", "경제", "정치");
+                            
+                        log.info("=== 네이버 API 수집: {}개 키워드로 기사 수집 ===", searchKeywords.size());
+                        List<NewsArticleDto> dtos = naverProvider.fetchNews(naverConfig, searchKeywords);
+                        List<NewsArticle> articles = convertDtosToEntities(dtos);
+                        allArticles.addAll(articles);
+                        log.info("네이버 API에서 {}개 기사 수집됨", articles.size());
+                    }
+                } catch (Exception e) {
+                    log.error("네이버 API 수집 실패: {}", e.getMessage());
+                }
+            } else {
+                log.warn("네이버 NewsProvider를 찾을 수 없습니다.");
             }
 
             // 중복 제거
@@ -363,7 +366,10 @@ public class SimpleNewsCollectionService {
             return allRssArticles;
         }
 
-        // 각 RSS 소스별로 빠른 수집 (시간 제한)
+        // 각 RSS 소스별로 빠른 수집
+        int successCount = 0;
+        int totalCount = relevantRssProviders.size();
+        
         for (Map.Entry<String, NewsProviderProperties.ProviderConfig> entry : relevantRssProviders.entrySet()) {
             String providerKey = entry.getKey();
             NewsProviderProperties.ProviderConfig config = entry.getValue();
@@ -373,31 +379,36 @@ public class SimpleNewsCollectionService {
 
                 long startTime = System.currentTimeMillis();
 
-                // 키워드 없이 기사 수집 (빠른 처리)
                 List<NewsArticleDto> dtos = rssProvider.fetchNews(config, new ArrayList<>());
+                
+                if (dtos == null || dtos.isEmpty()) {
+                    log.warn("RSS '{}': 수집된 기사가 없습니다", config.getName());
+                    continue;
+                }
+                
                 List<NewsArticle> articles = convertDtosToEntities(dtos);
 
-                // 각 RSS당 최대 10개로 확대
                 if (articles.size() > 10) {
                     articles = articles.subList(0, 10);
                 }
 
                 allRssArticles.addAll(articles);
+                successCount++;
 
                 long elapsed = System.currentTimeMillis() - startTime;
-                log.info("RSS '{}': {}개 기사 수집 ({}ms)", config.getName(), articles.size(), elapsed);
+                log.info("RSS '{}': {}개 기사 수집 성공 ({}ms)", config.getName(), articles.size(), elapsed);
 
-                // 개별 RSS 처리가 10초 이상 걸리면 중단
                 if (elapsed > 10000) {
                     log.warn("RSS '{}' 처리 시간 초과 ({}ms), 다음 소스로 이동", config.getName(), elapsed);
                 }
 
             } catch (Exception e) {
-                log.error("RSS '{}' 수집 실패 (빠른 처리): {}", config.getName(), e.getMessage());
+                log.error("RSS '{}' 수집 실패: {} - 다음 RSS로 계속 진행", config.getName(), e.getMessage());
+                continue;
             }
         }
-
-        log.info("RSS 총 {}개 기사 수집 완료, 키워드 매칭 시작", allRssArticles.size());
+        
+        log.info("RSS 수집 완료: {}/{}개 소스 성공, 총 {}개 기사", successCount, totalCount, allRssArticles.size());
 
         // RSS 기사들도 키워드 매칭 필터링 적용
         List<NewsArticle> matchedRssArticles = new ArrayList<>();
@@ -548,48 +559,5 @@ public class SimpleNewsCollectionService {
         }
 
         log.info("관심사 매핑 완료: {}개", totalMappings);
-    }
-
-    private void performS3Backup(List<NewsArticle> savedArticles) {
-        try {
-            log.info("=== S3 백업 시작: {}개 기사를 하나의 파일로 일괄 백업 ===", savedArticles.size());
-
-            LocalDate today = LocalDate.now();
-            String backupKey = "news-backup-" + today + "-" + System.currentTimeMillis() + ".json";
-
-            StringBuilder json = new StringBuilder();
-            json.append("{\"backup_date\":\"").append(today).append("\",");
-            json.append("\"count\":").append(savedArticles.size()).append(",");
-            json.append("\"articles\":[");
-
-            for (int i = 0; i < savedArticles.size(); i++) {
-                NewsArticle article = savedArticles.get(i);
-                json.append("{").append("\"id\":").append(article.getId()).append(",")
-                    .append("\"title\":\"").append(escapeJson(article.getTitle())).append("\",")
-                    .append("\"source\":\"").append(escapeJson(article.getSourceIn())).append("\",")
-                    .append("\"url\":\"").append(escapeJson(article.getSourceUrl())).append("\"")
-                    .append("}");
-                if (i < savedArticles.size() - 1) {
-                    json.append(",");
-                }
-            }
-            json.append("]}");
-
-            // S3 업로드
-            newsBackupS3Manager.uploadNewsBackup(json.toString().getBytes(StandardCharsets.UTF_8), backupKey);
-
-            log.info("=== S3 백업 완료: {} ===", backupKey);
-
-        } catch (Exception e) {
-            log.error("S3 백업 실패: {}", e.getMessage());
-        }
-    }
-
-    private String escapeJson(String input) {
-        if (input == null) {
-            return "";
-        }
-        return input.replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r")
-            .replace("\t", "\\t");
     }
 }

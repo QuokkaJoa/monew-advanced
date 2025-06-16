@@ -66,4 +66,32 @@ public class NewsBackupS3Manager {
             throw new RuntimeException("S3 백업 다운로드 실패: " + s3Key, e);
         }
     }
+
+    public String getLatestBackupKey() {
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+        LocalDate yesterday = today.minusDays(1);
+        
+        // 오늘 백업 파일이 있는지 먼저 확인
+        String todayKey = getBackupFileKey(today);
+        try {
+            GetObjectRequest todayRequest = GetObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(todayKey)
+                    .build();
+            s3Client.getObject(todayRequest).close(); // 파일 존재 확인
+            logger.info("오늘({}) 백업 파일 찾음: {}", today, todayKey);
+            return todayKey;
+        } catch (S3Exception e) {
+            if (e.statusCode() == 404) {
+                logger.info("오늘({}) 백업 파일이 없음. 어제({}) 백업 파일로 대체", today, yesterday);
+                return getBackupFileKey(yesterday);
+            } else {
+                logger.error("오늘 백업 파일 확인 중 오류 발생: {}", e.getMessage());
+                return getBackupFileKey(yesterday);
+            }
+        } catch (Exception e) {
+            logger.error("오늘 백업 파일 확인 중 예상치 못한 오류: {}", e.getMessage());
+            return getBackupFileKey(yesterday);
+        }
+    }
 } 
