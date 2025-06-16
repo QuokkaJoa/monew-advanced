@@ -27,25 +27,9 @@ public class NewsArticleRepositoryCustomImpl implements NewsArticleRepositoryCus
     public List<NewsArticle> findArticlesSortedByCommentCount(String keyword, String sourceIn,
         Timestamp publishDateFrom, Timestamp publishDateTo, String direction, String cursor,
         int limit) {
-
-        BooleanBuilder whereCondition = buildBaseCondition(keyword, sourceIn, publishDateFrom,
-            publishDateTo);
-
-        OrderSpecifier<?> commentCountOrder;
-        if ("ASC".equalsIgnoreCase(direction)) {
-            commentCountOrder = commentsManagement.count().asc();
-        } else {
-            commentCountOrder = commentsManagement.count().desc();
-        }
-
-        return queryFactory.selectFrom(newsArticle).leftJoin(commentsManagement)
-            .on(commentsManagement.newsArticle.id.eq(newsArticle.id)
-                .and(commentsManagement.active.isTrue())).where(whereCondition)
-            .groupBy(newsArticle.id, newsArticle.sourceIn, newsArticle.sourceUrl, newsArticle.title,
-                newsArticle.publishedDate, newsArticle.summary, newsArticle.viewCount,
-                newsArticle.commentCount, newsArticle.isDeleted, newsArticle.createdAt,
-                newsArticle.updatedAt).orderBy(commentCountOrder, newsArticle.publishedDate.desc())
-            .limit(limit).fetch();
+        
+        return findArticlesWithFiltersAndSorting(keyword, sourceIn, publishDateFrom, 
+            publishDateTo, "commentCount", direction, cursor, limit);
     }
 
     @Override
@@ -96,60 +80,18 @@ public class NewsArticleRepositoryCustomImpl implements NewsArticleRepositoryCus
     public List<NewsArticle> findArticlesSortedByViewCount(String keyword, String sourceIn,
         Timestamp publishDateFrom, Timestamp publishDateTo, String direction, String cursor,
         int limit) {
-
-        BooleanBuilder whereCondition = buildBaseCondition(keyword, sourceIn, publishDateFrom,
-            publishDateTo);
-
-        // 커서 조건 추가
-        if (cursor != null && !cursor.trim().isEmpty()) {
-            Long cursorValue = Long.parseLong(cursor);
-            if ("DESC".equalsIgnoreCase(direction)) {
-                whereCondition.and(newsArticle.viewCount.lt(cursorValue));
-            } else {
-                whereCondition.and(newsArticle.viewCount.gt(cursorValue));
-            }
-        }
-
-        // 정렬 조건
-        OrderSpecifier<?> viewCountOrder;
-        if ("ASC".equalsIgnoreCase(direction)) {
-            viewCountOrder = newsArticle.viewCount.asc();
-        } else {
-            viewCountOrder = newsArticle.viewCount.desc();
-        }
-
-        return queryFactory.selectFrom(newsArticle).where(whereCondition)
-            .orderBy(viewCountOrder, newsArticle.publishedDate.desc()).limit(limit).fetch();
+        
+        return findArticlesWithFiltersAndSorting(keyword, sourceIn, publishDateFrom, 
+            publishDateTo, "viewCount", direction, cursor, limit);
     }
 
     @Override
     public List<NewsArticle> findArticlesSortedByPublishDate(String keyword, String sourceIn,
         Timestamp publishDateFrom, Timestamp publishDateTo, String direction, String cursor,
         int limit) {
-
-        BooleanBuilder whereCondition = buildBaseCondition(keyword, sourceIn, publishDateFrom,
-            publishDateTo);
-
-        // 커서 조건 추가
-        if (cursor != null && !cursor.trim().isEmpty()) {
-            Timestamp cursorDate = Timestamp.valueOf(cursor);
-            if ("DESC".equalsIgnoreCase(direction)) {
-                whereCondition.and(newsArticle.publishedDate.lt(cursorDate));
-            } else {
-                whereCondition.and(newsArticle.publishedDate.gt(cursorDate));
-            }
-        }
-
-        // 정렬 조건
-        OrderSpecifier<?> dateOrder;
-        if ("ASC".equalsIgnoreCase(direction)) {
-            dateOrder = newsArticle.publishedDate.asc();
-        } else {
-            dateOrder = newsArticle.publishedDate.desc();
-        }
-
-        return queryFactory.selectFrom(newsArticle).where(whereCondition).orderBy(dateOrder)
-            .limit(limit).fetch();
+        
+        return findArticlesWithFiltersAndSorting(keyword, sourceIn, publishDateFrom, 
+            publishDateTo, "publishDate", direction, cursor, limit);
     }
 
     @Override
@@ -177,12 +119,11 @@ public class NewsArticleRepositoryCustomImpl implements NewsArticleRepositoryCus
             whereCondition.and(newsArticle.sourceIn.eq(sourceIn));
         }
 
-        // 날짜 범위 필터
         if (publishDateFrom != null) {
             whereCondition.and(newsArticle.publishedDate.goe(publishDateFrom));
         }
         if (publishDateTo != null) {
-            whereCondition.and(newsArticle.publishedDate.loe(publishDateTo));
+            whereCondition.and(newsArticle.publishedDate.lt(publishDateTo));  // < 조건으로 인덱스 최적화
         }
 
         return whereCondition;
@@ -191,25 +132,24 @@ public class NewsArticleRepositoryCustomImpl implements NewsArticleRepositoryCus
     private BooleanExpression buildCursorCondition(String orderBy, String direction,
         String cursor) {
         try {
-            switch (orderBy) {
-                case "publishDate":
+            return switch (orderBy) {
+                case "publishDate" -> {
                     Timestamp cursorDate = Timestamp.valueOf(cursor);
-                    return "DESC".equalsIgnoreCase(direction) ? newsArticle.publishedDate.lt(
+                    yield "DESC".equalsIgnoreCase(direction) ? newsArticle.publishedDate.lt(
                         cursorDate) : newsArticle.publishedDate.gt(cursorDate);
-
-                case "viewCount":
+                }
+                case "viewCount" -> {
                     Long cursorViewCount = Long.parseLong(cursor);
-                    return "DESC".equalsIgnoreCase(direction) ? newsArticle.viewCount.lt(
+                    yield "DESC".equalsIgnoreCase(direction) ? newsArticle.viewCount.lt(
                         cursorViewCount) : newsArticle.viewCount.gt(cursorViewCount);
-
-                case "commentCount":
+                }
+                case "commentCount" -> {
                     Long cursorCommentCount = Long.parseLong(cursor);
-                    return "DESC".equalsIgnoreCase(direction) ? newsArticle.commentCount.lt(
+                    yield "DESC".equalsIgnoreCase(direction) ? newsArticle.commentCount.lt(
                         cursorCommentCount) : newsArticle.commentCount.gt(cursorCommentCount);
-
-                default:
-                    return null;
-            }
+                }
+                default -> null;
+            };
         } catch (Exception e) {
             log.warn("Invalid cursor format: {}", cursor, e);
             return null;
@@ -278,7 +218,7 @@ public class NewsArticleRepositoryCustomImpl implements NewsArticleRepositoryCus
             return null;
         }
     }
-
+    // orderby
     private OrderSpecifier<?>[] buildOrderSpecifiers(String orderBy, String direction) {
         Order order = "ASC".equalsIgnoreCase(direction) ? Order.ASC : Order.DESC;
 

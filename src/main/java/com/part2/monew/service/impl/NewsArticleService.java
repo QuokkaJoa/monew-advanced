@@ -77,10 +77,6 @@ public class NewsArticleService {
         int effectiveLimit = cursorDto.limit() > 0 ? cursorDto.limit() : 20;
 
         try {
-            logger.info(
-                "효율적인 정렬 방식으로 검색 시작 - keyword: {}, source: {}, orderBy: {}, direction: {}, cursor: {}, effectiveLimit: {}",
-                filterDto.keyword(), getFirstSource(filterDto.sourceIn()), cursorDto.orderBy(),
-                cursorDto.direction(), cursorDto.cursor(), effectiveLimit);
 
             return switch (cursorDto.orderBy()) {
                 case "commentCount" ->
@@ -115,7 +111,7 @@ public class NewsArticleService {
             filterDto.publishDateTo(), cursorDto.direction(), cursorDto.cursor(),
             effectiveLimit + 1);
 
-        return buildPaginatedResponse(articles, cursorDto, effectiveLimit, false);
+        return buildPaginatedResponse(articles, cursorDto, effectiveLimit);
     }
 
     private PaginatedResponseDto<NewsArticleResponseDto> getArticlesSortedByPublishDate(
@@ -126,7 +122,7 @@ public class NewsArticleService {
             filterDto.publishDateTo(), cursorDto.direction(), cursorDto.cursor(),
             effectiveLimit + 1);
 
-        return buildPaginatedResponse(articles, cursorDto, effectiveLimit, false);
+        return buildPaginatedResponse(articles, cursorDto, effectiveLimit);
     }
 
     private PaginatedResponseDto<NewsArticleResponseDto> buildPaginatedResponseWithoutCommentQuery(
@@ -178,8 +174,7 @@ public class NewsArticleService {
     }
 
     private PaginatedResponseDto<NewsArticleResponseDto> buildPaginatedResponse(
-        List<NewsArticle> articles, RequestCursorDto cursorDto, int effectiveLimit,
-        boolean needCommentCount) {
+        List<NewsArticle> articles, RequestCursorDto cursorDto, int effectiveLimit) {
 
         boolean hasNext = articles.size() > effectiveLimit;
         String nextCursor = null;
@@ -195,13 +190,11 @@ public class NewsArticleService {
             NewsArticle lastArticle = articles.get(articles.size() - 1);
 
             switch (cursorDto.orderBy()) {
-                case "publishDate":
-                    nextCursor = lastArticle.getPublishedDate().toString();
-                    break;
                 case "viewCount":
                     nextCursor = String.valueOf(lastArticle.getViewCount());
                     nextCursorViewCount = lastArticle.getViewCount();
                     break;
+                case "publishDate":
                 default:
                     nextCursor = lastArticle.getPublishedDate().toString();
             }
@@ -372,10 +365,10 @@ public class NewsArticleService {
         logger.info("데이터 백업 시작: {}", date);
 
         Timestamp startOfDayTimestamp = DateTimeUtil.parseTimestamp(date.toString());
-        Timestamp endOfDayTimestamp = DateTimeUtil.parseTimestampAsEndOfDay(date.toString());
+        Timestamp nextDayStartTimestamp = DateTimeUtil.parseTimestampAsNextDayStart(date.toString());
 
         List<NewsArticle> articlesToBackup = newsArticleRepository.findByIsDeletedFalseAndPublishedDateBetween(
-            startOfDayTimestamp, endOfDayTimestamp);
+            startOfDayTimestamp, nextDayStartTimestamp);
 
         if (articlesToBackup.isEmpty()) {
             logger.info("{} 날짜에 백업할 뉴스 기사가 없습니다.", date);
