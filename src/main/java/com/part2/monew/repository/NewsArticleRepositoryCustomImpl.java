@@ -119,12 +119,11 @@ public class NewsArticleRepositoryCustomImpl implements NewsArticleRepositoryCus
             whereCondition.and(newsArticle.sourceIn.eq(sourceIn));
         }
 
-        // 날짜 범위 필터
         if (publishDateFrom != null) {
             whereCondition.and(newsArticle.publishedDate.goe(publishDateFrom));
         }
         if (publishDateTo != null) {
-            whereCondition.and(newsArticle.publishedDate.loe(publishDateTo));
+            whereCondition.and(newsArticle.publishedDate.lt(publishDateTo));  // < 조건으로 인덱스 최적화
         }
 
         return whereCondition;
