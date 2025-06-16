@@ -72,11 +72,11 @@ public class SpringBatch {
         try {
             logger.info("=== 일일 뉴스 백업 시작 ===");
             
-            LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
-            logger.info("백업 대상 날짜: {}", today);
+            // 어제 날짜로 백업 (한국 시간 기준)
+            LocalDate yesterday = LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).minusDays(1);
+            logger.info("백업 대상 날짜: {} (어제)", yesterday);
             
-
-            newsArticleService.backupDataByDate(today);
+            newsArticleService.backupDataByDate(yesterday);
             
             logger.info("=== 일일 뉴스 백업 완료 ===");
             
