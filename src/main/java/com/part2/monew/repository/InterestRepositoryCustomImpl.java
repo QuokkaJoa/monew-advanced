@@ -12,22 +12,14 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -50,17 +42,22 @@ public class InterestRepositoryCustomImpl implements InterestRepositoryCustom {
   @Override
   public CursorPageResponse<InterestDto> searchInterestsWithQueryDsl(
       String keywordSearchTerm, String orderByField, String direction,
-      String primaryCursorValue, String secondaryCursorValue, int limit, UUID requestUserId) {
+      String primaryCursorValue, String idCursorValue, int limit, UUID requestUserId) {
 
-    BooleanExpression predicate = buildWhereClause(keywordSearchTerm, orderByField, direction, primaryCursorValue, secondaryCursorValue);
     List<OrderSpecifier<?>> orderSpecifiers = buildOrderByClause(orderByField, direction);
+    BooleanExpression predicate = buildWhereClause(keywordSearchTerm, orderByField, direction, primaryCursorValue, idCursorValue);
 
-    List<UUID> interestIds = queryFactory
+    JPAQuery<UUID> idQuery = queryFactory
         .select(interest.id)
         .from(interest)
-        .leftJoin(interest.interestKeywords, interestKeyword)
-        .leftJoin(interestKeyword.keyword, keyword)
-        .where(predicate)
+        .where(predicate);
+
+    if (keywordSearchTerm != null && !keywordSearchTerm.isEmpty()) {
+      idQuery.leftJoin(interest.interestKeywords, interestKeyword)
+          .leftJoin(interestKeyword.keyword, keyword);
+    }
+
+    List<UUID> interestIds = idQuery
         .orderBy(orderSpecifiers.toArray(new OrderSpecifier[0]))
         .limit(limit + 1)
         .fetch()
@@ -91,38 +88,34 @@ public class InterestRepositoryCustomImpl implements InterestRepositoryCustom {
         .distinct()
         .fetch();
 
-    Map<UUID, Interest> interestMap = results.stream()
-        .map(tuple -> tuple.get(interest))
-        .filter(Objects::nonNull)
-        .collect(Collectors.toMap(Interest::getId, i -> i, (i1, i2) -> i1));
+    Map<UUID, Tuple> resultMap = results.stream()
+        .collect(Collectors.toMap(
+            t -> Objects.requireNonNull(t.get(interest)).getId(),
+            t -> t,
+            (t1, t2) -> t1
+        ));
 
     List<InterestDto> interestDtos = contentInterestIds.stream()
         .map(id -> {
-          Interest fetchedInterest = interestMap.get(id);
-          boolean isSubscribed = results.stream()
-              .filter(tuple -> fetchedInterest.equals(tuple.get(interest)))
-              .map(tuple -> Boolean.TRUE.equals(tuple.get(1, Boolean.class)))
-              .findFirst().orElse(false);
-          return interestMapper.toDto(fetchedInterest, isSubscribed);
+          Tuple tuple = resultMap.get(id);
+          if (tuple == null) return null;
+          Interest fetchedInterest = tuple.get(interest);
+          Boolean isSubscribed = tuple.get(1, Boolean.class);
+          return interestMapper.toDto(fetchedInterest, Boolean.TRUE.equals(isSubscribed));
         })
+        .filter(Objects::nonNull)
         .collect(Collectors.toList());
 
     String nextPrimaryCursor = null;
-    String nextSecondaryCursor = null;
+    String nextIdCursor = null;
     if (hasNext && !interestDtos.isEmpty()) {
       InterestDto lastDto = interestDtos.get(interestDtos.size() - 1);
-      if (lastDto != null) {
-        if ("name".equalsIgnoreCase(orderByField)) {
-          nextPrimaryCursor = lastDto.name();
-        } else {
-          nextPrimaryCursor = lastDto.subscriberCount().toString();
-        }
-
-        Interest lastInterestEntity = interestMap.get(lastDto.id());
-        if (lastInterestEntity != null && lastInterestEntity.getCreatedAt() != null) {
-          nextSecondaryCursor = lastInterestEntity.getCreatedAt().toInstant().toString();
-        }
+      if ("name".equalsIgnoreCase(orderByField)) {
+        nextPrimaryCursor = lastDto.name();
+      } else {
+        nextPrimaryCursor = lastDto.subscriberCount().toString();
       }
+      nextIdCursor = lastDto.id().toString();
     }
 
     long totalElements = countTotalElements(keywordSearchTerm);
@@ -130,7 +123,7 @@ public class InterestRepositoryCustomImpl implements InterestRepositoryCustom {
     return CursorPageResponse.of(
         interestDtos,
         nextPrimaryCursor,
-        nextSecondaryCursor,
+        nextIdCursor,
         totalElements,
         hasNext
     );
@@ -148,65 +141,53 @@ public class InterestRepositoryCustomImpl implements InterestRepositoryCustom {
   }
 
   private BooleanExpression buildWhereClause(String keywordSearchTerm, String orderByField, String direction,
-      String primaryCursorValue, String secondaryCursorValue) {
-    BooleanExpression predicate = Expressions.asBoolean(true).isTrue();
+      String primaryCursorValue, String idCursorValue) {
+    BooleanExpression predicate = null;
+
     if (keywordSearchTerm != null && !keywordSearchTerm.isEmpty()) {
-      predicate = predicate.and(
-          interest.name.containsIgnoreCase(keywordSearchTerm)
-              .or(interest.interestKeywords.any().keyword.name.containsIgnoreCase(keywordSearchTerm))
-      );
+      predicate = interest.name.containsIgnoreCase(keywordSearchTerm)
+          .or(interest.interestKeywords.any().keyword.name.containsIgnoreCase(keywordSearchTerm));
     }
 
     if (orderByField != null && primaryCursorValue != null && !primaryCursorValue.isEmpty()) {
-      Timestamp createdAtCursorValue = null;
-      if (secondaryCursorValue != null && !secondaryCursorValue.isEmpty()) {
-        try {
-          createdAtCursorValue = Timestamp.from(Instant.parse(secondaryCursorValue));
-        } catch (Exception e) {
-          log.warn("커서 파싱 오류 (secondaryCursorValue): {}", secondaryCursorValue, e);
-        }
-      }
-
       boolean isAsc = "ASC".equalsIgnoreCase(direction);
 
+      UUID idCursor = null;
+      if (idCursorValue != null && !idCursorValue.isEmpty()) {
+        try {
+          idCursor = UUID.fromString(idCursorValue);
+        } catch (Exception e) {
+          log.warn("ID 커서 파싱 오류: {}", idCursorValue, e);
+        }
+      }
+      if (idCursor == null) {
+        return predicate;
+      }
+
+      BooleanExpression cursorCondition = null;
       if ("name".equalsIgnoreCase(orderByField)) {
         if (isAsc) {
-          BooleanExpression primaryCondition = interest.name.gt(primaryCursorValue);
-          if (createdAtCursorValue != null) {
-            predicate = predicate.and(primaryCondition.or(interest.name.eq(primaryCursorValue).and(interest.createdAt.gt(createdAtCursorValue))));
-          } else {
-            predicate = predicate.and(primaryCondition);
-          }
+          cursorCondition = interest.name.gt(primaryCursorValue)
+              .or(interest.name.eq(primaryCursorValue).and(interest.id.gt(idCursor)));
         } else {
-          BooleanExpression primaryCondition = interest.name.lt(primaryCursorValue);
-          if (createdAtCursorValue != null) {
-            predicate = predicate.and(primaryCondition.or(interest.name.eq(primaryCursorValue).and(interest.createdAt.lt(createdAtCursorValue))));
-          } else {
-            predicate = predicate.and(primaryCondition);
-          }
+          cursorCondition = interest.name.lt(primaryCursorValue)
+              .or(interest.name.eq(primaryCursorValue).and(interest.id.lt(idCursor)));
         }
       } else if ("subscriberCount".equalsIgnoreCase(orderByField)) {
         try {
           Integer countCursor = Integer.parseInt(primaryCursorValue);
           if (isAsc) {
-            BooleanExpression primaryCondition = interest.subscriberCount.gt(countCursor);
-            if (createdAtCursorValue != null) {
-              predicate = predicate.and(primaryCondition.or(interest.subscriberCount.eq(countCursor).and(interest.createdAt.gt(createdAtCursorValue))));
-            } else {
-              predicate = predicate.and(primaryCondition);
-            }
+            cursorCondition = interest.subscriberCount.gt(countCursor)
+                .or(interest.subscriberCount.eq(countCursor).and(interest.id.gt(idCursor)));
           } else {
-            BooleanExpression primaryCondition = interest.subscriberCount.lt(countCursor);
-            if (createdAtCursorValue != null) {
-              predicate = predicate.and(primaryCondition.or(interest.subscriberCount.eq(countCursor).and(interest.createdAt.lt(createdAtCursorValue))));
-            } else {
-              predicate = predicate.and(primaryCondition);
-            }
+            cursorCondition = interest.subscriberCount.lt(countCursor)
+                .or(interest.subscriberCount.eq(countCursor).and(interest.id.lt(idCursor)));
           }
         } catch (NumberFormatException e) {
           log.warn("구독자 수 커서 파싱 오류: {}", primaryCursorValue, e);
         }
       }
+      predicate = (predicate == null) ? cursorCondition : predicate.and(cursorCondition);
     }
     return predicate;
   }
@@ -221,16 +202,10 @@ public class InterestRepositoryCustomImpl implements InterestRepositoryCustom {
     } else if ("subscriberCount".equalsIgnoreCase(orderByField)) {
       orders.add(new OrderSpecifier<>(orderDirection, interest.subscriberCount));
     } else {
-      log.warn("알 수 없는 정렬 기준 '{}', 기본 정렬(최신순)을 사용합니다.", orderByField);
       orders.add(new OrderSpecifier<>(Order.DESC, interest.createdAt));
     }
 
-
-    if (!("createdAt".equalsIgnoreCase(orderByField))) {
-      orders.add(new OrderSpecifier<>(orderDirection, interest.createdAt));
-    }
     orders.add(new OrderSpecifier<>(orderDirection, interest.id));
-
     return orders;
   }
 }
