@@ -17,6 +17,10 @@ public class DateTimeUtil {
             return null;
         }
 
+        if (dateTimeString.startsWith("T") && !dateTimeString.contains("-")) {
+            return null;
+        }
+
         try {
             OffsetDateTime offsetDateTime = OffsetDateTime.parse(dateTimeString);
             return Timestamp.from(offsetDateTime.toInstant());
@@ -35,9 +39,7 @@ public class DateTimeUtil {
                         LocalDateTime startOfDay = localDate.atStartOfDay();
                         return Timestamp.from(startOfDay.atZone(KOREA_ZONE).toInstant());
                     } catch (DateTimeParseException e4) {
-                        throw new IllegalArgumentException("Invalid date format: " + dateTimeString
-                            + ". Supported formats: ISO 8601 (2024-12-05T10:30:00+09:00), UTC (2024-12-05T01:30:00Z), "
-                            + "Local DateTime (2024-12-05T10:30:00), Date only (2024-12-05)", e4);
+                        return null;
                     }
                 }
             }
@@ -47,6 +49,10 @@ public class DateTimeUtil {
 
     public static Timestamp parseTimestampAsNextDayStart(String dateTimeString) {
         if (dateTimeString == null || dateTimeString.trim().isEmpty()) {
+            return null;
+        }
+
+        if (dateTimeString.startsWith("T") && !dateTimeString.contains("-")) {
             return null;
         }
 
@@ -68,9 +74,7 @@ public class DateTimeUtil {
                         LocalDateTime nextDayStart = localDate.plusDays(1).atStartOfDay();
                         return Timestamp.from(nextDayStart.atZone(KOREA_ZONE).toInstant());
                     } catch (DateTimeParseException e4) {
-                        throw new IllegalArgumentException("Invalid date format: " + dateTimeString
-                            + ". Supported formats: ISO 8601 (2024-12-05T10:30:00+09:00), UTC (2024-12-05T01:30:00Z), "
-                            + "Local DateTime (2024-12-05T10:30:00), Date only (2024-12-05)", e4);
+                        return null;
                     }
                 }
             }
