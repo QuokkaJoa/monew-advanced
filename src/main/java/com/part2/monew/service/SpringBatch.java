@@ -3,6 +3,7 @@ package com.part2.monew.service;
 import com.part2.monew.config.BatchConfig;
 import com.part2.monew.entity.NewsArticle;
 import com.part2.monew.service.impl.NewsArticleService;
+import com.part2.monew.storage.S3LogUploader;
 import java.time.LocalDate;
 import java.util.List;
 import org.slf4j.Logger;
@@ -17,16 +18,16 @@ public class SpringBatch {
     
     private final BatchConfig batchConfig;
     private final SimpleNewsCollectionService newsCollectionService;
-    private final NewsBackupS3Manager newsBackupS3Manager;
+    private final S3LogUploader s3LogUploader;
     private final NewsArticleService newsArticleService;
 
     public SpringBatch(BatchConfig batchConfig, 
                       SimpleNewsCollectionService newsCollectionService,
-                      NewsBackupS3Manager newsBackupS3Manager,
+                      S3LogUploader s3LogUploader,
                       NewsArticleService newsArticleService) {
         this.batchConfig = batchConfig;
         this.newsCollectionService = newsCollectionService;
-        this.newsBackupS3Manager = newsBackupS3Manager;
+        this.s3LogUploader = s3LogUploader;
         this.newsArticleService = newsArticleService;
         
         logger.info("SpringBatch 초기화 완료 - 스케줄링 전용");
@@ -72,11 +73,11 @@ public class SpringBatch {
         try {
             logger.info("=== 일일 뉴스 백업 시작 ===");
             
-            LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
-            logger.info("백업 대상 날짜: {}", today);
+            // 어제 날짜로 백업 (한국 시간 기준)
+            LocalDate yesterday = LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).minusDays(1);
+            logger.info("백업 대상 날짜: {} (어제)", yesterday);
             
-
-            newsArticleService.backupDataByDate(today);
+            newsArticleService.backupDataByDate(yesterday);
             
             logger.info("=== 일일 뉴스 백업 완료 ===");
             
