@@ -17,6 +17,9 @@ import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
@@ -50,8 +53,26 @@ public class InterestRepositoryCustomImpl implements InterestRepositoryCustom {
       String primaryCursorValue, String secondaryCursorValue, int limit, UUID requestUserId) {
 
     BooleanExpression predicate = buildWhereClause(keywordSearchTerm, orderByField, direction, primaryCursorValue, secondaryCursorValue);
-
     List<OrderSpecifier<?>> orderSpecifiers = buildOrderByClause(orderByField, direction);
+
+    List<UUID> interestIds = queryFactory
+        .select(interest.id)
+        .from(interest)
+        .leftJoin(interest.interestKeywords, interestKeyword)
+        .leftJoin(interestKeyword.keyword, keyword)
+        .where(predicate)
+        .orderBy(orderSpecifiers.toArray(new OrderSpecifier[0]))
+        .limit(limit + 1)
+        .fetch()
+        .stream().distinct().collect(Collectors.toList());
+
+    boolean hasNext = interestIds.size() > limit;
+    List<UUID> contentInterestIds = hasNext ? interestIds.subList(0, limit) : interestIds;
+
+    if (contentInterestIds.isEmpty()) {
+      long totalElements = countTotalElements(keywordSearchTerm);
+      return CursorPageResponse.of(Collections.emptyList(), null, null, totalElements, false);
+    }
 
     List<Tuple> results = queryFactory
         .select(
@@ -65,47 +86,46 @@ public class InterestRepositoryCustomImpl implements InterestRepositoryCustom {
         .from(interest)
         .leftJoin(interest.interestKeywords, interestKeyword).fetchJoin()
         .leftJoin(interestKeyword.keyword, keyword).fetchJoin()
-        .where(predicate)
+        .where(interest.id.in(contentInterestIds))
         .orderBy(orderSpecifiers.toArray(new OrderSpecifier[0]))
-        .limit(limit + 1)
         .distinct()
         .fetch();
 
-    boolean hasNext = results.size() > limit;
-    List<Tuple> contentTuples = hasNext ? results.subList(0, limit) : results;
+    Map<UUID, Interest> interestMap = results.stream()
+        .map(tuple -> tuple.get(interest))
+        .filter(Objects::nonNull)
+        .collect(Collectors.toMap(Interest::getId, i -> i, (i1, i2) -> i1));
 
-    List<InterestDto> interestDtos = contentTuples.stream()
-        .map(tuple -> {
-          Interest fetchedInterest = tuple.get(interest);
-          Boolean isSubscribed = tuple.get(1, Boolean.class);
-          return interestMapper.toDto(fetchedInterest, Boolean.TRUE.equals(isSubscribed));
+    List<InterestDto> interestDtos = contentInterestIds.stream()
+        .map(id -> {
+          Interest fetchedInterest = interestMap.get(id);
+          boolean isSubscribed = results.stream()
+              .filter(tuple -> fetchedInterest.equals(tuple.get(interest)))
+              .map(tuple -> Boolean.TRUE.equals(tuple.get(1, Boolean.class)))
+              .findFirst().orElse(false);
+          return interestMapper.toDto(fetchedInterest, isSubscribed);
         })
         .collect(Collectors.toList());
 
     String nextPrimaryCursor = null;
     String nextSecondaryCursor = null;
-    if (hasNext && !contentTuples.isEmpty()) {
-      Interest lastInterestInContent = contentTuples.get(contentTuples.size() - 1).get(interest);
-      if (lastInterestInContent != null) {
+    if (hasNext && !interestDtos.isEmpty()) {
+      InterestDto lastDto = interestDtos.get(interestDtos.size() - 1);
+      if (lastDto != null) {
         if ("name".equalsIgnoreCase(orderByField)) {
-          nextPrimaryCursor = lastInterestInContent.getName();
+          nextPrimaryCursor = lastDto.name();
         } else {
-          nextPrimaryCursor = lastInterestInContent.getSubscriberCount().toString();
+          nextPrimaryCursor = lastDto.subscriberCount().toString();
         }
-        if (lastInterestInContent.getCreatedAt() != null) {
-          nextSecondaryCursor = lastInterestInContent.getCreatedAt().toInstant().toString();
+
+        Interest lastInterestEntity = interestMap.get(lastDto.id());
+        if (lastInterestEntity != null && lastInterestEntity.getCreatedAt() != null) {
+          nextSecondaryCursor = lastInterestEntity.getCreatedAt().toInstant().toString();
         }
       }
     }
 
-    BooleanExpression countPredicate = buildWhereClause(keywordSearchTerm, null, null, null, null);
-    JPAQuery<Long> countBaseQuery = queryFactory.select(interest.countDistinct()).from(interest);
-    if (keywordSearchTerm != null && !keywordSearchTerm.isEmpty()) {
-      countBaseQuery.leftJoin(interest.interestKeywords, interestKeyword)
-          .leftJoin(interestKeyword.keyword, keyword);
-    }
-    Long totalElements = countBaseQuery.where(countPredicate).fetchOne();
-    totalElements = (totalElements == null) ? 0L : totalElements;
+    long totalElements = countTotalElements(keywordSearchTerm);
 
     return CursorPageResponse.of(
         interestDtos,
@@ -114,6 +134,17 @@ public class InterestRepositoryCustomImpl implements InterestRepositoryCustom {
         totalElements,
         hasNext
     );
+  }
+
+  private Long countTotalElements(String keywordSearchTerm) {
+    BooleanExpression countPredicate = buildWhereClause(keywordSearchTerm, null, null, null, null);
+    JPAQuery<Long> countBaseQuery = queryFactory.select(interest.countDistinct()).from(interest);
+    if (keywordSearchTerm != null && !keywordSearchTerm.isEmpty()) {
+      countBaseQuery.leftJoin(interest.interestKeywords, interestKeyword)
+          .leftJoin(interestKeyword.keyword, keyword);
+    }
+    Long total = countBaseQuery.where(countPredicate).fetchOne();
+    return total == null ? 0L : total;
   }
 
   private BooleanExpression buildWhereClause(String keywordSearchTerm, String orderByField, String direction,
