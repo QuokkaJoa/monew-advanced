@@ -387,6 +387,12 @@ public class SimpleNewsCollectionService {
                 }
                 
                 List<NewsArticle> articles = convertDtosToEntities(dtos);
+                
+                // 필터링으로 제거된 기사 수 로깅
+                if (dtos.size() != articles.size()) {
+                    log.warn("RSS '{}': {}개 중 제목이 없는 {}개 기사 제외됨", 
+                        config.getName(), dtos.size(), dtos.size() - articles.size());
+                }
 
                 if (articles.size() > 10) {
                     articles = articles.subList(0, 10);
@@ -413,11 +419,17 @@ public class SimpleNewsCollectionService {
         // RSS 기사들도 키워드 매칭 필터링 적용
         List<NewsArticle> matchedRssArticles = new ArrayList<>();
         for (NewsArticle article : allRssArticles) {
+            // 제목이 null인 기사는 건너뛰기
+            if (article.getTitle() == null || article.getTitle().trim().isEmpty()) {
+                log.warn("제목이 없는 RSS 기사 건너뜀: {}", article.getSourceUrl());
+                continue;
+            }
+            
             if (containsKeywordInTitleOrSummary(article, keywords)) {
                 matchedRssArticles.add(article);
+                String title = article.getTitle();
                 log.debug("RSS 키워드 매칭: {}",
-                    article.getTitle().length() > 50 ? article.getTitle().substring(0, 50) + "..."
-                        : article.getTitle());
+                    title.length() > 50 ? title.substring(0, 50) + "..." : title);
             }
         }
 
@@ -478,8 +490,9 @@ public class SimpleNewsCollectionService {
 
         for (String keyword : keywords) {
             if (searchText.contains(keyword.toLowerCase())) {
+                String displayTitle = article.getTitle() != null ? article.getTitle() : "제목 없음";
                 log.debug("키워드 '{}' 매칭: {}", keyword,
-                    title.length() > 50 ? title.substring(0, 50) + "..." : title);
+                    displayTitle.length() > 50 ? displayTitle.substring(0, 50) + "..." : displayTitle);
                 return true;
             }
         }
@@ -488,10 +501,29 @@ public class SimpleNewsCollectionService {
     }
 
     private List<NewsArticle> convertDtosToEntities(List<NewsArticleDto> dtos) {
-        return dtos.stream().map(dto -> NewsArticle.builder().sourceIn(dto.getProviderName())
-            .sourceUrl(dto.getOriginalLink()).title(dto.getTitle())
-            .publishedDate(dto.getPublishedDate())
-            .summary(dto.getSummaryOrContent()).viewCount(0L).build()).collect(Collectors.toList());
+        if (dtos == null || dtos.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        return dtos.stream()
+            .filter(dto -> dto != null && dto.getTitle() != null && !dto.getTitle().trim().isEmpty()) // null 또는 빈 제목 필터링
+            .map(dto -> {
+                try {
+                    return NewsArticle.builder()
+                        .sourceIn(dto.getProviderName() != null ? dto.getProviderName() : "Unknown")
+                        .sourceUrl(dto.getOriginalLink())
+                        .title(dto.getTitle().trim()) // 제목 공백 제거
+                        .publishedDate(dto.getPublishedDate())
+                        .summary(dto.getSummaryOrContent() != null ? dto.getSummaryOrContent().trim() : "")
+                        .viewCount(0L)
+                        .build();
+                } catch (Exception e) {
+                    log.error("DTO 변환 중 오류 발생: {}, DTO: {}", e.getMessage(), dto.getTitle());
+                    return null;
+                }
+            })
+            .filter(article -> article != null) // 변환 실패한 기사 제외
+            .collect(Collectors.toList());
     }
 
     private List<NewsArticle> saveUniqueArticles(List<NewsArticle> articles) {
@@ -550,9 +582,10 @@ public class SimpleNewsCollectionService {
                         InterestNewsArticle mapping = InterestNewsArticle.create(interest, article);
                         interestNewsArticleRepository.save(mapping);
                         totalMappings++;
+                        String mappingTitle = article.getTitle() != null ? article.getTitle() : "제목 없음";
                         log.debug("매핑 생성: '{}' → '{}'",
-                            article.getTitle().length() > 30 ? article.getTitle().substring(0, 30)
-                                + "..." : article.getTitle(), interestName);
+                            mappingTitle != null && mappingTitle.length() > 30 ? mappingTitle.substring(0, 30)
+                                + "..." : mappingTitle, interestName);
                     }
                 }
             }
