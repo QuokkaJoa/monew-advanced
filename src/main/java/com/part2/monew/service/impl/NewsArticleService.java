@@ -20,7 +20,7 @@ import com.part2.monew.repository.ActivityDetailRepository;
 import com.part2.monew.repository.CommentRepository;
 import com.part2.monew.repository.NewsArticleRepository;
 import com.part2.monew.repository.UserRepository;
-import com.part2.monew.service.NewsBackupS3Manager;
+import com.part2.monew.storage.S3LogUploader;
 import com.part2.monew.util.DateTimeUtil;
 import java.io.InputStream;
 import java.sql.Timestamp;
@@ -48,19 +48,19 @@ public class NewsArticleService {
     @Getter
     private final NewsArticleRepository newsArticleRepository;
     private final NewsArticleMapper newsArticleMapper;
-    private final NewsBackupS3Manager newsBackupS3Manager;
+    private final S3LogUploader s3LogUploader;
     private final ActivityDetailRepository activityDetailRepository;
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
     private final ObjectMapper objectMapper;
 
     public NewsArticleService(NewsArticleRepository newsArticleRepository,
-        NewsArticleMapper newsArticleMapper, NewsBackupS3Manager newsBackupS3Manager,
+        NewsArticleMapper newsArticleMapper, S3LogUploader s3LogUploader,
         ActivityDetailRepository activityDetailRepository, UserRepository userRepository,
         CommentRepository commentRepository) {
         this.newsArticleRepository = newsArticleRepository;
         this.newsArticleMapper = newsArticleMapper;
-        this.newsBackupS3Manager = newsBackupS3Manager;
+        this.s3LogUploader = s3LogUploader;
         this.activityDetailRepository = activityDetailRepository;
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
@@ -272,8 +272,8 @@ public class NewsArticleService {
 
         List<NewsArticle> restoredArticles = new ArrayList<>();
         for (LocalDate date = from; !date.isAfter(to); date = date.plusDays(1)) {
-            String s3Key = newsBackupS3Manager.getBackupFileKey(date);
-            try (InputStream backupStream = newsBackupS3Manager.downloadNewsBackup(s3Key)) {
+            String s3Key = s3LogUploader.getBackupFileKey(date);
+            try (InputStream backupStream = s3LogUploader.downloadNewsBackup(s3Key)) {
                 if (backupStream == null) {
                     logger.warn("{} 날짜의 백업 파일이 S3에 없습니다. Key: {}", date, s3Key);
                     continue;
@@ -317,10 +317,10 @@ public class NewsArticleService {
         logger.info("최신 백업에서 삭제된 기사 복구 시작");
 
         try {
-            String latestBackupKey = newsBackupS3Manager.getLatestBackupKey();
+            String latestBackupKey = s3LogUploader.getLatestBackupKey();
             int restoredCount = 0;
 
-            try (InputStream backupStream = newsBackupS3Manager.downloadNewsBackup(
+            try (InputStream backupStream = s3LogUploader.downloadNewsBackup(
                 latestBackupKey)) {
                 if (backupStream == null) {
                     logger.warn("최신 백업 파일이 S3에 없습니다. Key: {}", latestBackupKey);
@@ -377,8 +377,8 @@ public class NewsArticleService {
 
         try {
             byte[] jsonData = objectMapper.writeValueAsBytes(articlesToBackup);
-            String s3Key = newsBackupS3Manager.getBackupFileKey(date);
-            newsBackupS3Manager.uploadNewsBackup(jsonData, s3Key);
+            String s3Key = s3LogUploader.getBackupFileKey(date);
+            s3LogUploader.uploadNewsBackup(jsonData, s3Key);
             logger.info("데이터 백업 완료: {} 날짜의 {}개 기사. S3 Key: {}", date, articlesToBackup.size(),
                 s3Key);
         } catch (Exception e) {
