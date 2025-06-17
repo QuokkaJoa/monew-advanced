@@ -48,12 +48,16 @@ public class ArticleController {
         @RequestHeader(value = "Monew-Request-User-ID", required = false) String userId) {
         
         try {
+            // 잘못된 날짜 형식 검증 및 보정
             if (publishDateFrom != null && (publishDateFrom.startsWith("T") && !publishDateFrom.contains("-"))) {
                 publishDateFrom = null;
             }
             if (publishDateTo != null && (publishDateTo.startsWith("T") && !publishDateTo.contains("-"))) {
                 publishDateTo = null;
             }
+            
+            // limit을 항상 20으로 고정
+            Integer fixedLimit = 20;
             
             // 날짜 파싱
             Timestamp publishDateFromTs = DateTimeUtil.parseTimestamp(publishDateFrom);
@@ -83,7 +87,7 @@ public class ArticleController {
                 cursor, 
                 afterTs,
                 null, // nextCursorViewCount는 내부에서 계산
-                limit
+                fixedLimit  // 고정된 limit 사용
             );
             
             PaginatedResponseDto<NewsArticleResponseDto> result = newsArticleService.getArticles(
