@@ -419,9 +419,15 @@ public class SimpleNewsCollectionService {
         // RSS 기사들도 키워드 매칭 필터링 적용
         List<NewsArticle> matchedRssArticles = new ArrayList<>();
         for (NewsArticle article : allRssArticles) {
+            // 제목이 null인 기사는 건너뛰기
+            if (article.getTitle() == null || article.getTitle().trim().isEmpty()) {
+                log.warn("제목이 없는 RSS 기사 건너뜀: {}", article.getSourceUrl());
+                continue;
+            }
+            
             if (containsKeywordInTitleOrSummary(article, keywords)) {
                 matchedRssArticles.add(article);
-                String title = article.getTitle() != null ? article.getTitle() : "제목 없음";
+                String title = article.getTitle();
                 log.debug("RSS 키워드 매칭: {}",
                     title.length() > 50 ? title.substring(0, 50) + "..." : title);
             }
@@ -495,16 +501,28 @@ public class SimpleNewsCollectionService {
     }
 
     private List<NewsArticle> convertDtosToEntities(List<NewsArticleDto> dtos) {
+        if (dtos == null || dtos.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
         return dtos.stream()
-            .filter(dto -> dto.getTitle() != null && !dto.getTitle().trim().isEmpty()) // null 또는 빈 제목 필터링
-            .map(dto -> NewsArticle.builder()
-                .sourceIn(dto.getProviderName())
-                .sourceUrl(dto.getOriginalLink())
-                .title(dto.getTitle().trim()) // 제목 공백 제거
-                .publishedDate(dto.getPublishedDate())
-                .summary(dto.getSummaryOrContent() != null ? dto.getSummaryOrContent().trim() : "")
-                .viewCount(0L)
-                .build())
+            .filter(dto -> dto != null && dto.getTitle() != null && !dto.getTitle().trim().isEmpty()) // null 또는 빈 제목 필터링
+            .map(dto -> {
+                try {
+                    return NewsArticle.builder()
+                        .sourceIn(dto.getProviderName() != null ? dto.getProviderName() : "Unknown")
+                        .sourceUrl(dto.getOriginalLink())
+                        .title(dto.getTitle().trim()) // 제목 공백 제거
+                        .publishedDate(dto.getPublishedDate())
+                        .summary(dto.getSummaryOrContent() != null ? dto.getSummaryOrContent().trim() : "")
+                        .viewCount(0L)
+                        .build();
+                } catch (Exception e) {
+                    log.error("DTO 변환 중 오류 발생: {}, DTO: {}", e.getMessage(), dto.getTitle());
+                    return null;
+                }
+            })
+            .filter(article -> article != null) // 변환 실패한 기사 제외
             .collect(Collectors.toList());
     }
 
@@ -566,7 +584,7 @@ public class SimpleNewsCollectionService {
                         totalMappings++;
                         String mappingTitle = article.getTitle() != null ? article.getTitle() : "제목 없음";
                         log.debug("매핑 생성: '{}' → '{}'",
-                            mappingTitle.length() > 30 ? mappingTitle.substring(0, 30)
+                            mappingTitle != null && mappingTitle.length() > 30 ? mappingTitle.substring(0, 30)
                                 + "..." : mappingTitle, interestName);
                     }
                 }
