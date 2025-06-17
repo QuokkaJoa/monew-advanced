@@ -48,6 +48,13 @@ public class ArticleController {
         @RequestHeader(value = "Monew-Request-User-ID", required = false) String userId) {
         
         try {
+            if (publishDateFrom != null && (publishDateFrom.startsWith("T") && !publishDateFrom.contains("-"))) {
+                publishDateFrom = null;
+            }
+            if (publishDateTo != null && (publishDateTo.startsWith("T") && !publishDateTo.contains("-"))) {
+                publishDateTo = null;
+            }
+            
             // 날짜 파싱
             Timestamp publishDateFromTs = DateTimeUtil.parseTimestamp(publishDateFrom);
             Timestamp publishDateToTs = DateTimeUtil.parseTimestampAsNextDayStart(publishDateTo);
