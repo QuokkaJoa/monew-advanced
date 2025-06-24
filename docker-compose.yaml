@@ -1,60 +1,57 @@
 version: '3.8'
 
 services:
-  db:
+  db-master:
     image: postgres:15
-    env_file:
-      - .env
+    container_name: db-master
+    env_file: .env
     environment:
-      POSTGRES_DB:       ${DB_NAME}
-      POSTGRES_USER:     ${DB_USERNAME}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./initdb:/docker-entrypoint-initdb.d
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "${DB_MASTER_PORT:-5432}:5432"
+    volumes:
+      - postgres-master-data:/var/lib/postgresql/data
+      - ./master_conf/pg_hba.conf:/docker-entrypoint-initdb.d/pg_hba.conf
+      - ./master_conf/postgresql.conf:/docker-entrypoint-initdb.d/postgresql.conf
+      - ./master_conf/init-custom.sh:/docker-entrypoint-initdb.d/init-custom.sh
+      - ./master_conf/init-replication.sql:/docker-entrypoint-initdb.d/init-replication.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}"]
       interval: 10s
       retries: 5
 
-  part2-5team-monew:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    env_file:
-      - .env
+  db-standby:
+    image: postgres:15
+    container_name: db-standby
+    env_file: .env
     environment:
-      # Local 스토리지 루트 경로 (컨테이너 내)
-      MONEW_STORAGE_LOCAL_ROOT_PATH: ./monew-storage
-
-      APP_PORT: ${APP_PORT}
-
-      # Spring & DB
-      SPRING_PROFILES_ACTIVE:       ${SPRING_PROFILES_ACTIVE}
-      SPRING_DATASOURCE_URL:        jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
-      SPRING_DATASOURCE_USERNAME:   ${DB_USERNAME}
-      SPRING_DATASOURCE_PASSWORD:   ${DB_PASSWORD}
-
-      # (AWS 모드 시 사용)
-      AWS_S3_ACCESS_KEY:      ${AWS_S3_ACCESS_KEY}
-      AWS_S3_SECRET_KEY:      ${AWS_S3_SECRET_KEY}
-      AWS_S3_REGION:          ${AWS_S3_REGION}
-      AWS_S3_BUCKET:          ${AWS_S3_BUCKET}
-
-    depends_on:
-      db:
-        condition: service_healthy
-
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "${HOST_PORT}:${APP_PORT}"
-
+      - "${DB_STANDBY_PORT:-5433}:5432"
+    depends_on:
+      db-master:
+        condition: service_healthy
     volumes:
-      - "${STORAGE_LOCAL_ROOT_PATH}:/data/monew-storage"
+      - postgres-standby-data:/var/lib/postgresql/data
+      # standby_conf/postgresql.conf는 일단 마운트하지 마!
+    entrypoint: /bin/bash
+    command: >
+      -c 'if [ ! -s "/var/lib/postgresql/data/PG_VERSION" ]; then
+      echo "Initializing standby from master...";
+      rm -rf /var/lib/postgresql/data/* /var/lib/postgresql/data/.[!.]* /var/lib/postgresql/data/..?*;
+      PGPASSWORD=$REPLICATION_PASSWORD pg_basebackup -h db-master -D /var/lib/postgresql/data -U $REPLICATION_USER -vP -Xs -R;
+      fi;
+      exec docker-entrypoint.sh postgres'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}"]
+      interval: 10s
+      retries: 5
 
-    restart: always
 
 volumes:
-  postgres-data:
-  binary-content-storage:
+  postgres-master-data:
+  postgres-standby-data:

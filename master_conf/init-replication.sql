@@ -1,0 +1,2 @@
+CREATE ROLE replicator WITH REPLICATION LOGIN ENCRYPTED PASSWORD 'replicatorpw';
+-- 반드시 .env의 REPLICATION_PASSWORD 값과 맞출 것!
