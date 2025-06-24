@@ -23,9 +23,11 @@ import com.part2.monew.repository.UserRepository;
 import com.part2.monew.service.CommentService;
 import com.part2.monew.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.sql.DataSource;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -41,9 +43,18 @@ public class CommentServiceImpl implements CommentService {
     private final UserRepository userRepository;
     private final NewsArticleRepository articleRepository;
     private final NotificationService notificationService;
+    // CommentServiceImpl 맨 위에 추가
+    @Autowired
+    private DataSource dataSource;
 
     @Override
     public CursorResponse findCommentsByArticleId(CommentRequest commentRequest, UUID userId) {
+        try {
+            System.out.println("[DB URLfindCommentsByArticleId] " + dataSource.getConnection().getMetaData().getURL());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
 
         List<CommentsManagement> commentsManagements = commentRepository.findCommentsByArticleId(
             commentRequest.getArticleId(),
@@ -66,6 +77,12 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public CommentResponse create(CreateCommentRequest requeset) {
+        try {
+            System.out.println("[DB URLcreate] " + dataSource.getConnection().getMetaData().getURL());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         User user = userRepository.findById(requeset.getUserId())
                 .orElseThrow(UserNotFoundException::new);
 

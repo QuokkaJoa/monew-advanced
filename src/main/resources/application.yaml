@@ -8,11 +8,6 @@ spring:
       matching-strategy: ant_path_matcher
   profiles:
     active: ${SPRING_PROFILES_ACTIVE}
-  datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
-    username: postgres
-    password: password
-    driver-class-name: org.postgresql.Driver
 server:
   port: ${APP_PORT:8080}
 
@@ -202,20 +197,6 @@ monew:
   cloud:
     slack:
       webhook-url: ${WEBHOOK-URL}
-  batch:
-    news-collection:
-      enabled: ${BATCH_NEWS_COLLECTION_ENABLED:true}
-      cron: ${BATCH_NEWS_COLLECTION_CRON:0 0 * * * *}
-      keywords: ${BATCH_NEWS_KEYWORDS:경제,정치,사회,IT,스포츠}  # 일단 설정
-
-      backup:
-        enabled: ${BATCH_BACKUP_ENABLED:true}
-        local-path: ${BATCH_BACKUP_LOCAL_PATH:./backup}
-        file-format: ${BATCH_BACKUP_FORMAT:json}
-      s3-upload:
-        enabled: ${BATCH_S3_UPLOAD_ENABLED:true}
-        backup-folder: ${BATCH_S3_BACKUP_FOLDER:news-backup}
-
 
 
 management:

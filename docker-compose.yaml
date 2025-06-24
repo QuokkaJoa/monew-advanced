@@ -51,6 +51,24 @@ services:
       interval: 10s
       retries: 5
 
+  app:
+    container_name: spring-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_DATASOURCE_MASTER_URL: jdbc:postgresql://db:5432/${DB_NAME}
+      SPRING_DATASOURCE_REPLICA_URL: jdbc:postgresql://db:5433/${DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    volumes:
+      - "${STORAGE_LOCAL_ROOT_PATH:-./monew-storage}:/data/monew-storage"
+    restart: always
 
 volumes:
   postgres-master-data:

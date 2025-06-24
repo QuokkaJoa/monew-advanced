@@ -4,18 +4,29 @@ spring:
       on-profile: dev
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}    # env 사용
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      idle-timeout: 60000
+    master:
+      jdbc-url: jdbc:postgresql://127.0.0.1:${DB_PORT}/${DB_NAME}
+      username: ${DB_USERNAME}
+      password: ${DB_PASSWORD}
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        maximum-pool-size: 10
+        minimum-idle: 5
+        idle-timeout: 60000
+
+    replica:
+      jdbc-url: jdbc:postgresql://127.0.0.1:${DB_REPLICA_PORT}/${DB_NAME}
+      username: ${DB_USERNAME}
+      password: ${DB_PASSWORD}
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        maximum-pool-size: 10
+        minimum-idle: 5
+        idle-timeout: 60000
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     show-sql: true
     properties:
       hibernate:
@@ -28,8 +39,19 @@ spring:
       mode: always
 
 server:
-  port: ${APP_PORT:8080}               # 중복 정의 시 여기서도 사용 가능
+  port: ${APP_PORT:8080}
 
 logging:
   level:
     com.part2.monew: DEBUG
+
+monew:
+  storage:
+    s3:
+      accessKeyId: test-access-key
+      secretAccessKey: test-secret-key
+      region: ap-northeast-2
+      bucket: test-bucket
+  cloud:
+    slack:
+      webhook-url: test-webhook-url
