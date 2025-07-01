@@ -1,6 +1,8 @@
 package com.part2.monew.service.impl;
 
 
+import com.part2.monew.annotation.Master;
+import com.part2.monew.annotation.ReadOnly;
 import com.part2.monew.dto.request.CommentRequest;
 import com.part2.monew.dto.request.CreateCommentRequest;
 import com.part2.monew.dto.response.CommentLikeResponse;
@@ -23,6 +25,7 @@ import com.part2.monew.repository.UserRepository;
 import com.part2.monew.service.CommentService;
 import com.part2.monew.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +38,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @Transactional(readOnly = true)
 public class CommentServiceImpl implements CommentService {
 
@@ -47,14 +51,10 @@ public class CommentServiceImpl implements CommentService {
     @Autowired
     private DataSource dataSource;
 
+    @ReadOnly
     @Override
     public CursorResponse findCommentsByArticleId(CommentRequest commentRequest, UUID userId) {
-        try {
-            System.out.println("[DB URLfindCommentsByArticleId] " + dataSource.getConnection().getMetaData().getURL());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
+        printLogo("Comment findCommentsByArticleId");
 
         List<CommentsManagement> commentsManagements = commentRepository.findCommentsByArticleId(
             commentRequest.getArticleId(),
@@ -75,13 +75,10 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    @Master
     @Transactional
     public CommentResponse create(CreateCommentRequest requeset) {
-        try {
-            System.out.println("[DB URLcreate] " + dataSource.getConnection().getMetaData().getURL());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        printLogo("Comment Create");
 
         User user = userRepository.findById(requeset.getUserId())
                 .orElseThrow(UserNotFoundException::new);
@@ -103,8 +100,12 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    @Master
     @Transactional
     public CommentResponse update(UUID id, String content) {
+        printLogo("Comment update");
+
+
         CommentsManagement commentsManagement = commentRepository.findById(id)
                 .orElseThrow(CommentNotFoundException::new);
 
@@ -114,8 +115,12 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    @Master
     @Transactional
     public CommentLikeResponse likeComment(UUID id, UUID userId) {
+        printLogo("Comment likeComment");
+
+
         Optional<CommentLike> existingLikeOpt = commentLikeRepository.findByCommentsManagement_IdAndUser_Id(id, userId);
 
         existingLikeOpt.ifPresent(cl -> {
@@ -153,8 +158,12 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    @Master
     @Transactional
     public void unlikeComment(UUID id, UUID userId) {
+        printLogo("Comment unlikeComment");
+
+
         CommentLike commentLike = commentLikeRepository.findByCommentsManagement_IdAndUser_Id(id, userId)
                 .orElseThrow(CommentUnlikeDuplication::new);
 
@@ -170,8 +179,12 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    @Master
     @Transactional
     public void deleteComment(UUID id) {
+        printLogo("Comment deleteComment");
+
+
         CommentsManagement commentsManagement = commentRepository.findById(id)
                 .orElseThrow(CommentNotFoundException::new);
 
@@ -185,8 +198,12 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    @Master
     @Transactional
     public void hardDeleteComment(UUID id) {
+        printLogo("Comment hardDeleteComment");
+
+
         CommentsManagement commentsManagement = commentRepository.findById(id)
                 .orElseThrow(CommentNotFoundException::new);
 
@@ -201,4 +218,12 @@ public class CommentServiceImpl implements CommentService {
         return commentLikeRepository.findAllByCommentsManagement(commentsManagement).size();
     }
 
+
+    private void printLogo(String callName){
+        try {
+            log.info("[DB URL Check {}] : {} ", callName ,dataSource.getConnection().getMetaData().getURL());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

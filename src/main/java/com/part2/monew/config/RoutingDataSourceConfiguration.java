@@ -21,7 +21,7 @@ import static com.part2.monew.config.DataSourceConfiguration.MAIN_DATA_SOURCE;
 import static com.part2.monew.config.DataSourceConfiguration.STANDBY_DATA_SOURCE;
 
 
-@EnableJpaRepositories(  // # 1
+@EnableJpaRepositories(
         basePackages = {"com.part2.monew.repository"},
         entityManagerFactoryRef = "entityManagerFactory",
         transactionManagerRef = "transactionManager"
@@ -32,47 +32,38 @@ public class RoutingDataSourceConfiguration {
     private final String ROUTING_DATA_SOURCE = "ROUTING_DATA_SOURCE";
     private final String DATA_SOURCE = "DATA_SOURCE";
 
-
     @Bean(DATA_SOURCE)
     @Primary
     public DataSource dataSource(@Qualifier(ROUTING_DATA_SOURCE) DataSource routingDataSource) {
         return new LazyConnectionDataSourceProxy(routingDataSource);
     }
 
-
     @Bean(ROUTING_DATA_SOURCE)
     public DataSource routingDataSource(
-            @Qualifier(MAIN_DATA_SOURCE) final DataSource mainDataSource,  // # 2
+            @Qualifier(MAIN_DATA_SOURCE) final DataSource mainDataSource,
             @Qualifier(STANDBY_DATA_SOURCE) final DataSource standbyDataSource) {
 
-        // # 3
         RoutingDataSource routingDataSource = new RoutingDataSource();
 
-        // # 4
         Map<Object, Object> dataSourceMap = new HashMap<>();
         dataSourceMap.put(DataSourceType.MAIN, mainDataSource);
         dataSourceMap.put(DataSourceType.STANDBY, standbyDataSource);
 
-        // # 5
         routingDataSource.setTargetDataSources(dataSourceMap);
-        // # 6
         routingDataSource.setDefaultTargetDataSource(mainDataSource);
 
         return routingDataSource;
     }
 
     @Bean("entityManagerFactory")
-    public LocalContainerEntityManagerFactoryBean entityManagerFactory( // # 8
-                                                                        @Qualifier(DATA_SOURCE) DataSource dataSource) {
-        // # 9
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory(
+            @Qualifier(DATA_SOURCE) DataSource dataSource) {
+
         LocalContainerEntityManagerFactoryBean entityManagerFactory
                 = new LocalContainerEntityManagerFactoryBean();
         entityManagerFactory.setDataSource(dataSource);
-
         entityManagerFactory.setPackagesToScan("com.part2.monew.entity");
-
         entityManagerFactory.setJpaVendorAdapter(this.jpaVendorAdapter());
-
         entityManagerFactory.setPersistenceUnitName("entityManager");
         return entityManagerFactory;
     }
@@ -86,8 +77,8 @@ public class RoutingDataSourceConfiguration {
     }
 
     @Bean("transactionManager")
-    public PlatformTransactionManager platformTransactionManager( // # 10
-                                                                  @Qualifier("entityManagerFactory") LocalContainerEntityManagerFactoryBean entityManagerFactory) {
+    public PlatformTransactionManager platformTransactionManager(
+            @Qualifier("entityManagerFactory") LocalContainerEntityManagerFactoryBean entityManagerFactory) {
         JpaTransactionManager jpaTransactionManager = new JpaTransactionManager();
         jpaTransactionManager.setEntityManagerFactory(entityManagerFactory.getObject());
         return jpaTransactionManager;
