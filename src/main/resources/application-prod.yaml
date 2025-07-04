@@ -37,6 +37,17 @@ spring:
     init:
       mode: never
 
+  data:
+    redis:
+      host: ${REDIS_HOST}        # ElastiCache Primary Endpoint
+      port: ${REDIS_PORT:6379}   # 기본 6379
+      # 클러스터 모드 사용 시 Lettuce 클러스터 옵션
+      lettuce:
+        cluster:
+          enabled: ${REDIS_CLUSTER_ENABLED:false}
+          nodes: ${REDIS_CLUSTER_NODES:}
+
+
 server:
   port: ${APP_PORT:8080}
 

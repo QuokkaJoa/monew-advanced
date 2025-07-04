@@ -27,6 +27,7 @@ import com.part2.monew.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +53,12 @@ public class CommentServiceImpl implements CommentService {
     private DataSource dataSource;
 
     @ReadOnly
+    @Cacheable(
+            cacheNames  = "getComments",                   // 캐시 이름에 공백 없어야 함
+            cacheManager = "commentsCacheManager",
+            key        = "#commentRequest.articleId + ':limit:' + #commentRequest.limit",
+            unless     = "#commentRequest.after != null"   // after 있으면 캐시 스킵
+    )
     @Override
     public CursorResponse findCommentsByArticleId(CommentRequest commentRequest, UUID userId) {
         printLogo("Comment findCommentsByArticleId");

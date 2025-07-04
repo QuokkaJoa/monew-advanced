@@ -4,11 +4,13 @@ package com.part2.monew.dto.response;
 import com.part2.monew.entity.CommentsManagement;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.sql.Timestamp;
 import java.util.UUID;
 
 @Getter
+@NoArgsConstructor
 public class CommentResponse {
     private UUID id;
     private UUID articleId;

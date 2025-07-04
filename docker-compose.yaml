@@ -51,6 +51,16 @@ services:
       interval: 10s
       retries: 5
 
+  # Redis
+  redis:
+    image: redis:7.0
+    container_name: redis-server
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+
   app:
     container_name: spring-app
     build:
@@ -73,3 +83,4 @@ services:
 volumes:
   postgres-master-data:
   postgres-standby-data:
+  redis_data:

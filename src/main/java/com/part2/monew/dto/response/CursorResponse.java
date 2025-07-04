@@ -1,13 +1,14 @@
 package com.part2.monew.dto.response;
 
-import com.part2.monew.entity.CommentsManagement;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Getter
+@NoArgsConstructor
 public class CursorResponse {
     private List<CommentResponse> content = new ArrayList<>();
     private String nextCursor;

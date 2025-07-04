@@ -16,6 +16,7 @@ logging:
     root: INFO
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: DEBUG
+    org.springframework.cache: trace
 
 monew:
   storage:
