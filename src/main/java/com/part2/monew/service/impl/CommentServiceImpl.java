@@ -1,5 +1,12 @@
 package com.part2.monew.service.impl;
 
+import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.stereotype.Service;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 
 import com.part2.monew.annotation.Master;
 import com.part2.monew.annotation.ReadOnly;
@@ -27,14 +34,13 @@ import com.part2.monew.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.sql.DataSource;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,42 +49,67 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class CommentServiceImpl implements CommentService {
 
+    private final RedissonClient redisson;
+    private final CacheManager cacheManager;
     private final CommentRepository commentRepository;
     private final CommentLikeRepository commentLikeRepository;
     private final UserRepository userRepository;
     private final NewsArticleRepository articleRepository;
     private final NotificationService notificationService;
+
     // CommentServiceImpl 맨 위에 추가
     @Autowired
     private DataSource dataSource;
 
+    @Autowired
+    private RedisCacheManager redisCacheManager;
+
     @ReadOnly
-    @Cacheable(
-            cacheNames  = "getComments",                   // 캐시 이름에 공백 없어야 함
-            cacheManager = "commentsCacheManager",
-            key        = "#commentRequest.articleId + ':limit:' + #commentRequest.limit",
-            unless     = "#commentRequest.after != null"   // after 있으면 캐시 스킵
-    )
     @Override
-    public CursorResponse findCommentsByArticleId(CommentRequest commentRequest, UUID userId) {
-        printLogo("Comment findCommentsByArticleId");
+    public CursorResponse findCommentsByArticleId(CommentRequest req, UUID userId) {
+        String cacheKey = req.getArticleId() + ":limit:" + req.getLimit();
+        Cache cache = redisCacheManager.getCache("getComments");
 
-        List<CommentsManagement> commentsManagements = commentRepository.findCommentsByArticleId(
-            commentRequest.getArticleId(),
-            commentRequest.getAfter(),
-            commentRequest.getLimit(),
-            userId
-        );
+        // 1) 캐시 먼저 확인
+        CursorResponse cached = cache.get(cacheKey, CursorResponse.class);
+        if (cached != null) {
+            return cached;
+        }
 
-        Long totalElements = commentRepository.totalCount(commentRequest.getArticleId());
+        // 2) 분산 락 획득
+        RLock lock = redisson.getLock("lock:comments:" + cacheKey);
+        boolean locked = false;
+        try {
+            locked = lock.tryLock(5, 10, TimeUnit.SECONDS);
+            if (locked) {
+                // 2-1) 락 안에서 재확인 (중복 조회 방지)
+                cached = cache.get(cacheKey, CursorResponse.class);
+                if (cached != null) {
+                    return cached;
+                }
+                // 2-2) DB 조회
+                List<CommentsManagement> list = commentRepository.findCommentsByArticleId(
+                        req.getArticleId(), req.getAfter(), req.getLimit(), userId);
+                Long total = commentRepository.totalCount(req.getArticleId());
+                CursorResponse fresh = CursorResponse.of(
+                        list.stream().map(CommentResponse::of).collect(Collectors.toList()), total);
 
-        List<CommentResponse> commentReponses = commentsManagements.stream()
-                .map(CommentResponse::of)
-                .collect(Collectors.toList());
-
-
-
-        return CursorResponse.of(commentReponses, totalElements);
+                // 2-3) 캐시에 저장 (TTL 및 Jitter 옵션은 CacheManager 설정에서 조정)
+                cache.put(cacheKey, fresh);
+                return fresh;
+            } else {
+                // 락 획득 실패 시 짧게 대기 후 재귀/루프
+                Thread.sleep(100);
+                return findCommentsByArticleId(req, userId);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        } finally {
+            if (locked) {
+                lock.unlock();
+            }
+        }
     }
 
     @Override
