@@ -1,15 +1,11 @@
 package com.part2.monew;
 
+import com.part2.monew.support.IntegrationTestSupport;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
-@ActiveProfiles("test")
-class MonewApplicationTests {
 
+class MonewApplicationTests extends IntegrationTestSupport {
 	@Test
 	void contextLoads() {
 	}
-
 }

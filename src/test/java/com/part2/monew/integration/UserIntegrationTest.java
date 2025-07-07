@@ -1,21 +1,14 @@
 package com.part2.monew.integration;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.part2.monew.support.IntegrationTestSupport;
 import com.part2.monew.dto.request.UserCreateRequest;
 import com.part2.monew.dto.request.UserLoginRequest;
 import com.part2.monew.dto.request.UserUpdateRequest;
 import com.part2.monew.entity.User;
-import com.part2.monew.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -23,19 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@AutoConfigureMockMvc
-@Transactional
-public class UserIntegrationTest {
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private UserRepository userRepository;
+public class UserIntegrationTest extends IntegrationTestSupport {
 
     private UserCreateRequest createReq;
     private UserUpdateRequest updateReq;

@@ -1,6 +1,5 @@
 package com.part2.monew.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.part2.monew.dto.request.InterestRegisterRequestDto;
 import com.part2.monew.dto.request.InterestUpdateRequestDto;
 import com.part2.monew.dto.response.CursorPageResponse;
@@ -8,53 +7,28 @@ import com.part2.monew.dto.response.InterestDto;
 import com.part2.monew.global.exception.BusinessException;
 import com.part2.monew.global.exception.ErrorCode;
 import com.part2.monew.global.exception.ErrorResponse;
-import com.part2.monew.global.exception.GlobalExceptionHandler;
 import com.part2.monew.global.exception.interest.SimilarInterestExistsException;
-import com.part2.monew.service.InterestService;
+import com.part2.monew.support.ControllerTestSupport;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.ResultActions;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(InterestController.class)
-@ActiveProfiles("test")
-@Import(GlobalExceptionHandler.class)
-class InterestControllerTest {
-
-  @Autowired
-  private MockMvc mockMvc;
-
-  @Autowired
-  private ObjectMapper objectMapper;
-
-  @MockBean
-  private InterestService interestService;
+class InterestControllerTest extends ControllerTestSupport {
 
   private final String BASE_URL = "/api/interests";
   private UUID requestUserId;

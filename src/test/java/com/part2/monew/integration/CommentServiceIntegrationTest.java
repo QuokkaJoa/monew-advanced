@@ -1,18 +1,13 @@
 package com.part2.monew.integration;
 
+import com.part2.monew.support.IntegrationTestSupport;
 import com.part2.monew.dto.request.CommentRequest;
 import com.part2.monew.dto.response.CursorResponse;
 import com.part2.monew.entity.CommentsManagement;
 import com.part2.monew.entity.NewsArticle;
 import com.part2.monew.entity.User;
-import com.part2.monew.service.CommentService;
-import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -20,16 +15,7 @@ import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
-@Transactional
-@ActiveProfiles("test")
-class CommentServiceIntegrationTest {
-
-    @Autowired
-    private EntityManager em;
-
-    @Autowired
-    private CommentService commentService;
+class CommentServiceIntegrationTest extends IntegrationTestSupport{
 
     @Test
     @DisplayName("댓글 목록을 커서 기반으로 조회한다")

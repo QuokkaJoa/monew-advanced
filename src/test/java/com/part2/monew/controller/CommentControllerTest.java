@@ -1,21 +1,15 @@
 package com.part2.monew.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.part2.monew.dto.request.CommentRequest;
 import com.part2.monew.dto.request.CreateCommentRequest;
 import com.part2.monew.dto.request.UpdateCommentRequest;
 import com.part2.monew.dto.response.CommentLikeResponse;
 import com.part2.monew.dto.response.CommentResponse;
-import com.part2.monew.service.CommentService;
+import com.part2.monew.support.ControllerTestSupport;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -27,19 +21,8 @@ import java.util.UUID;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(CommentController.class)
-@ActiveProfiles("test")
-class CommentControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @MockBean
-    private CommentService commentService;
-
+class CommentControllerTest extends ControllerTestSupport {
     @DisplayName("댓글 목록을 조회한다.")
     @Test
     void findCommentsByArticleId() throws Exception {

@@ -1,22 +1,14 @@
 package com.part2.monew.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.part2.monew.dto.response.*;
 import com.part2.monew.global.exception.ErrorCode;
 import com.part2.monew.global.exception.ErrorResponse;
-import com.part2.monew.global.exception.GlobalExceptionHandler;
 import com.part2.monew.global.exception.user.UserNotFoundException;
-import com.part2.monew.service.UserActivityService;
+import com.part2.monew.support.ControllerTestSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -29,18 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(UserActivityController.class)
-@ActiveProfiles("test")
-@Import(GlobalExceptionHandler.class)
-class UserActivityControllerTest {
-
-  @Autowired private MockMvc mockMvc;
-  @Autowired private ObjectMapper objectMapper;
-
-  @SuppressWarnings("removal") // MockBean deprecated 경고 제거
-  @MockBean
-  private UserActivityService userActivityService;
-
+class UserActivityControllerTest extends ControllerTestSupport {
   private UUID userId;
 
   @BeforeEach

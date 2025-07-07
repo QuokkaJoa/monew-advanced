@@ -8,13 +8,14 @@ import com.part2.monew.dto.response.CursorResponse;
 import com.part2.monew.entity.CommentsManagement;
 import com.part2.monew.entity.NewsArticle;
 import com.part2.monew.entity.User;
-import com.part2.monew.mapper.InterestMapper;
-import com.part2.monew.repository.CommentLikeRepository;
 import com.part2.monew.global.exception.ErrorCode;
 import com.part2.monew.global.exception.comment.CommentLikeDuplication;
 import com.part2.monew.global.exception.comment.CommentUnlikeDuplication;
 import com.part2.monew.global.exception.user.UserNotFoundException;
+import com.part2.monew.mapper.InterestMapper;
+import com.part2.monew.repository.CommentLikeRepository;
 import com.part2.monew.repository.CommentRepository;
+import com.part2.monew.support.ConfigurationTestSupport;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.DisplayName;
@@ -36,8 +37,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional(readOnly = true)
-class CommentServiceImplTest {
-
+class CommentServiceImplTest extends ConfigurationTestSupport {
     @PersistenceContext
     private EntityManager em;
 

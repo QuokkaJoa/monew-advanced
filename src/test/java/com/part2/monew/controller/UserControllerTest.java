@@ -1,21 +1,14 @@
 package com.part2.monew.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.part2.monew.dto.request.UserCreateRequest;
 import com.part2.monew.dto.request.UserLoginRequest;
 import com.part2.monew.dto.request.UserUpdateRequest;
 import com.part2.monew.dto.response.UserResponse;
 import com.part2.monew.entity.User;
-import com.part2.monew.mapper.UserMapper;
-import com.part2.monew.service.UserService;
+import com.part2.monew.support.ControllerTestSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -27,22 +20,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(UserController.class)
-@ActiveProfiles("test")
-class UserControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockitoBean
-    private UserService userService;
-
-    @MockitoBean
-    private UserMapper userMapper;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
+class UserControllerTest extends ControllerTestSupport {
     private UserCreateRequest createReq;
     private UserLoginRequest loginReq;
     private UserUpdateRequest updateReq;
