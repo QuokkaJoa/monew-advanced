@@ -4,12 +4,12 @@ import com.part2.monew.config.BatchConfig;
 import com.part2.monew.entity.NewsArticle;
 import com.part2.monew.service.impl.NewsArticleService;
 import com.part2.monew.storage.S3LogUploader;
-import java.time.LocalDate;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.List;
 
 @Service
 public class SpringBatch {
@@ -33,7 +33,7 @@ public class SpringBatch {
         logger.info("SpringBatch 초기화 완료 - 스케줄링 전용");
     }
 
-    @Scheduled(cron = "0 0 0/1 * * *")
+//    @Scheduled(cron = "* * * * * *")
     public void executeNewsCollectionBatch() {
         if (!batchConfig.isEnabled()) {
             logger.info("뉴스 수집 배치가 비활성화되어 있습니다.");
@@ -51,7 +51,7 @@ public class SpringBatch {
     }
 
     // 매일 자정에 백업
-    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
+//    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
     public void executeDailyBackupBatch() {
         if (!batchConfig.isEnabled()) {
             logger.info("백업 배치가 비활성화되어 있습니다.");
